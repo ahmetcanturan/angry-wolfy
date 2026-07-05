@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${projectId} != null ? 'Edit project' : 'New project'">Project form</title>
+</head>
+<body>
+<h1 th:text="${projectId} != null ? 'Edit project' : 'New project'">Project form</h1>
+
+<form th:action="${projectId != null ? '/projects/' + projectId : '/projects'}"
+      th:object="${project}" method="post">
+
+    <div>
+        <label for="name">Name</label>
+        <input type="text" id="name" th:field="*{name}"/>
+        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color:red">Name error</span>
+    </div>
+
+    <div>
+        <label for="description">Description</label>
+        <textarea id="description" th:field="*{description}"></textarea>
+        <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" style="color:red">Description error</span>
+    </div>
+
+    <div>
+        <label for="repositoryPath">Repository path</label>
+        <input type="text" id="repositoryPath" th:field="*{repositoryPath}"/>
+        <span th:if="${#fields.hasErrors('repositoryPath')}" th:errors="*{repositoryPath}" style="color:red">Repository path error</span>
+    </div>
+
+    <button type="submit">Save</button>
+    <a th:href="@{/projects}">Cancel</a>
+</form>
+</body>
+</html>

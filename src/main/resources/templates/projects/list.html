@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Projects</title>
+</head>
+<body>
+<h1>Projects</h1>
+
+<a th:href="@{/projects/new}">New project</a>
+
+<table border="1" cellpadding="6">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Repository path</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="project : ${projects}">
+        <td th:text="${project.name}">Name</td>
+        <td th:text="${project.description}">Description</td>
+        <td th:text="${project.repositoryPath}">Repository path</td>
+        <td>
+            <a th:href="@{/projects/{id}/edit(id=${project.id})}">Edit</a>
+            <form th:action="@{/projects/{id}/delete(id=${project.id})}" method="post" style="display:inline">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
