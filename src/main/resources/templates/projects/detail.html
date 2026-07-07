@@ -151,19 +151,30 @@
         }
 
         .targets-list { display: flex; flex-direction: column; gap: 12px; }
+        .target-item { position: relative; }
         .target-card {
             position: relative; background: #fff; border: 1px solid #e6ebf2; border-radius: 15px;
             overflow: hidden; box-shadow: 0 1px 2px rgba(14,35,64,.04);
         }
+        /* edit/delete float just outside the card's right edge, in the gutter */
+        .target-outer-actions {
+            position: absolute; top: 14px; left: calc(100% + 8px);
+            display: flex; flex-direction: column; gap: 6px; z-index: 2;
+        }
         .target-row {
             display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px;
-            flex-wrap: wrap;
+            flex-wrap: wrap; cursor: pointer; transition: background .12s ease;
         }
+        .target-row:hover { background: #fafbfd; }
         .target-row-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-        .target-corner-actions { position: absolute; top: 6px; left: 6px; z-index: 2; display: flex; gap: 3px; }
+        .row-chevron {
+            font-size: 20px; line-height: 1; color: #b8c4d6; font-weight: 700;
+            transition: transform .18s ease; flex-shrink: 0; margin-left: -6px;
+        }
+        .target-card.open .row-chevron { transform: rotate(180deg); color: #7c8aa0; }
         .target-icon-btn {
-            width: 17px; height: 17px; border-radius: 50%; border: none;
-            font-size: 9px; font-weight: 700; line-height: 1;
+            width: 24px; height: 24px; border-radius: 7px; border: none;
+            font-size: 11px; font-weight: 700; line-height: 1;
             cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
             padding: 0; text-decoration: none; transition: background .12s ease, color .12s ease;
         }
@@ -180,7 +191,7 @@
         .rps-block { text-align: right; }
         .rps-value { font-size: 15px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
         .rps-label { font-size: 10.5px; color: #93a1b5; font-weight: 600; letter-spacing: .03em; }
-        .row-actions { display: flex; gap: 8px; }
+        .row-actions { display: flex; gap: 8px; align-items: center; }
         .btn-small {
             font-family: inherit; font-size: 13px; font-weight: 700; color: #3d5580; background: #eef2f8;
             border: 1px solid #e0e7f1; padding: 8px 14px; border-radius: 9px; cursor: pointer;
@@ -188,10 +199,12 @@
         .btn-small.danger { color: #c0392b; }
         .btn-config {
             display: inline-flex; align-items: center; justify-content: center; font-family: inherit;
-            font-size: 15px; line-height: 1; color: #3d5580; background: #eef2f8; border: 1px solid #e0e7f1;
-            width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+            font-size: 30px; line-height: 1; color: #7c8aa0; background: none; border: none;
+            width: 42px; height: 42px; padding: 0; cursor: pointer;
+            transition: color .12s ease, transform .12s ease;
         }
-        .btn-config.open { background: #dbe4f1; color: #1e3a63; border-color: #c6d3e6; }
+        .btn-config:hover { color: #3d5580; transform: rotate(30deg); }
+        .btn-config.open { color: #1e3a63; }
 
         /* inline run-config panel */
         .run-config-panel {
@@ -285,13 +298,8 @@
         }
         .btn-run:disabled, .btn-small:disabled { opacity: .5; cursor: not-allowed; }
 
-        details.stats-panel > summary {
-            cursor: pointer; list-style: none; border-top: 1px solid #eef2f7; padding: 10px 20px;
-            font-size: 12.5px; font-weight: 700; color: #5e82ad; background: #fbfcfe;
-        }
-        details.stats-panel > summary::-webkit-details-marker { display: none; }
-        details.stats-panel > summary::marker { content: ""; }
-        details.stats-panel[open] > summary { border-bottom: 1px solid #eef2f7; }
+        /* summary is hidden — the whole target row now toggles the panel */
+        details.stats-panel > summary { display: none; }
         .stats-heading {
             font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #93a1b5;
             margin-bottom: 12px;
@@ -530,15 +538,8 @@
         </div>
 
         <div class="targets-list" th:if="${!#lists.isEmpty(targets)}">
-            <div class="target-card" th:each="t : ${targets}" th:attr="data-target-id=${t.id}">
-                <div class="target-corner-actions">
-                    <a th:href="@{/targets/{id}/edit(id=${t.id})}" class="target-icon-btn edit"
-                       title="Edit target" aria-label="Edit target">✎</a>
-                    <form th:action="@{/targets/{id}/delete(id=${t.id})}" method="post" style="line-height:0;"
-                          onsubmit="return confirm('Delete this target? This cannot be undone.');">
-                        <button type="submit" class="target-icon-btn delete" title="Delete target" aria-label="Delete target">✕</button>
-                    </form>
-                </div>
+            <div class="target-item" th:each="t : ${targets}">
+              <div class="target-card" th:attr="data-target-id=${t.id}">
                 <div class="target-row">
                     <div class="target-row-left">
                         <span class="method-badge"
@@ -575,6 +576,7 @@
                                 <span class="play"></span>Run
                             </button>
                         </div>
+                        <span class="row-chevron js-row-chevron" aria-hidden="true">⌄</span>
                     </div>
                 </div>
 
@@ -688,6 +690,15 @@
                         </div>
                     </div>
                 </details>
+              </div>
+              <div class="target-outer-actions">
+                  <a th:href="@{/targets/{id}/edit(id=${t.id})}" class="target-icon-btn edit"
+                     title="Edit target" aria-label="Edit target">✎</a>
+                  <form th:action="@{/targets/{id}/delete(id=${t.id})}" method="post" style="line-height:0;"
+                        onsubmit="return confirm('Delete this target? This cannot be undone.');">
+                      <button type="submit" class="target-icon-btn delete" title="Delete target" aria-label="Delete target">✕</button>
+                  </form>
+              </div>
             </div>
         </div>
 
@@ -972,7 +983,7 @@
 
         card.querySelector('.js-dash-empty').hidden = true;
         card.querySelector('.js-dash-body').hidden = false;
-        if (openPanel) { card.querySelector('.js-stats-panel').open = true; }
+        if (openPanel) { card.querySelector('.js-stats-panel').open = true; card.classList.add('open'); }
     }
 
     // ---- run history --------------------------------------------------
@@ -1044,12 +1055,26 @@
     // Populate history for every target card as the page loads.
     document.querySelectorAll('.target-card').forEach((card) => loadHistory(card));
 
+    // Whole target row toggles its stats/charts panel — except when the click
+    // lands on an interactive control (Configure, Run, edit, delete, inputs).
+    document.querySelectorAll('.target-card').forEach((card) => {
+        const row = card.querySelector('.target-row');
+        const panel = card.querySelector('.js-stats-panel');
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('button, a, input, select, textarea, form')) { return; }
+            panel.open = !panel.open;
+            card.classList.toggle('open', panel.open);
+        });
+    });
+
     // Configure toggle: show/hide the per-card run-config panel.
     document.querySelectorAll('.js-config-toggle').forEach((btn) => {
         btn.addEventListener('click', () => {
             const card = btn.closest('.target-card');
             const panel = card.querySelector('.js-config-panel');
             const nowOpen = panel.hidden;
+            // On open, pull the latest shared config so cards edited elsewhere stay in sync.
+            if (nowOpen) { applyConfigToPanel(panel, loadGlobalConfig()); }
             panel.hidden = !nowOpen;
             btn.classList.toggle('open', nowOpen);
         });
@@ -1068,6 +1093,53 @@
         });
     });
 
+    // ---- shared run-config persisted in localStorage --------------------
+    // One global config used by every target. Saved on Run; applied to all
+    // panels on load and whenever a panel opens, so cards stay in sync.
+    const RUN_CONFIG_KEY = 'angrywolfy.runConfig.v1';
+
+    // Snapshot a panel's fields into a plain, storable object.
+    function readConfigPanel(panel) {
+        const durationMode = panel.querySelector('.js-loadby[data-mode="duration"]').classList.contains('active');
+        return {
+            mode: durationMode ? 'duration' : 'requests',
+            requests: panel.querySelector('.js-cfg-requests').value,
+            duration: panel.querySelector('.js-cfg-duration').value,
+            concurrency: panel.querySelector('.js-cfg-concurrency').value,
+            rps: panel.querySelector('.js-cfg-rps').value
+        };
+    }
+
+    // Write a stored config object into a panel's fields + load-by toggle.
+    function applyConfigToPanel(panel, cfg) {
+        if (!cfg) { return; }
+        if (cfg.requests != null) { panel.querySelector('.js-cfg-requests').value = cfg.requests; }
+        if (cfg.duration != null) { panel.querySelector('.js-cfg-duration').value = cfg.duration; }
+        if (cfg.concurrency != null) { panel.querySelector('.js-cfg-concurrency').value = cfg.concurrency; }
+        if (cfg.rps != null) { panel.querySelector('.js-cfg-rps').value = cfg.rps; }
+        const mode = cfg.mode === 'duration' ? 'duration' : 'requests';
+        panel.querySelectorAll('.js-loadby').forEach((b) =>
+            b.classList.toggle('active', b.getAttribute('data-mode') === mode));
+        panel.querySelector('.js-amount-requests').hidden = (mode !== 'requests');
+        panel.querySelector('.js-amount-duration').hidden = (mode !== 'duration');
+    }
+
+    function loadGlobalConfig() {
+        try { return JSON.parse(localStorage.getItem(RUN_CONFIG_KEY)); }
+        catch (e) { return null; }
+    }
+    function saveGlobalConfig(cfg) {
+        try { localStorage.setItem(RUN_CONFIG_KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
+    }
+
+    // Apply any saved global config to every panel on first load.
+    (function applyStoredConfigToAllPanels() {
+        const cfg = loadGlobalConfig();
+        if (cfg) {
+            document.querySelectorAll('.js-config-panel').forEach((p) => applyConfigToPanel(p, cfg));
+        }
+    })();
+
     // Reads the config panel into an OhaOptions body. Blank fields fall back
     // to sensible defaults; an unset rate limit means "unlimited".
     function readOptions(card) {
@@ -1081,6 +1153,8 @@
         }
         const rps = parseFloat(panel.querySelector('.js-cfg-rps').value);
         if (!isNaN(rps) && rps > 0) { opts.queryPerSecond = rps; }
+        // Persist this run's config as the shared global one.
+        saveGlobalConfig(readConfigPanel(panel));
         return opts;
     }
 
@@ -1127,6 +1201,7 @@
                 empty.textContent = msg;
                 card.querySelector('.js-dash-body').hidden = true;
                 card.querySelector('.js-stats-panel').open = true;
+                card.classList.add('open');
             } finally {
                 clearInterval(wolfTimer);
                 hideOverlay(card);
