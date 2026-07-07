@@ -1,4 +1,4 @@
-package com.buddywolfy.angrywolfy.entity;
+package com.buddywolfy.angrywolfy.enums;
 
 public enum TargetType {
     REST,

@@ -32,40 +32,59 @@ public class OhaRunner {
 
     private final OhaCommandBuilder commandBuilder;
     private final ObjectMapper objectMapper;
+    private final OhaRunRegistry registry;
     private final Duration maxRunDuration;
 
     public OhaRunner(OhaCommandBuilder commandBuilder,
                      ObjectMapper objectMapper,
+                     OhaRunRegistry registry,
                      @Value("${angrywolfy.oha.max-run-seconds:120}") long maxRunSeconds) {
         this.commandBuilder = commandBuilder;
         this.objectMapper = objectMapper;
+        this.registry = registry;
         this.maxRunDuration = Duration.ofSeconds(maxRunSeconds);
     }
 
     /**
-     * Executes a load test and returns the parsed summary.
+     * Executes a load test and returns the parsed summary. The process is
+     * registered under {@code runId} so it can be cancelled mid-flight via
+     * {@link OhaRunRegistry#cancel(String)}.
      *
-     * @throws OhaExecutionException if oha cannot start, is interrupted, exceeds
-     *                               the max run duration, exits non-zero, or emits
-     *                               unparseable output
+     * @throws OhaCancelledException  if the run was cancelled via the registry
+     * @throws OhaExecutionException  if oha cannot start, is interrupted, exceeds
+     *                                the max run duration, exits non-zero, or emits
+     *                                unparseable output
      */
-    public OhaResult run(Target target, Config config, OhaOptions options) {
+    public OhaResult run(String runId, Target target, Config config, OhaOptions options) {
         List<String> command = commandBuilder.build(target, config, options.withDefaults());
-        log.info("Running oha: {}", String.join(" ", command));
+        log.info("Running oha [{}]: {}", runId, String.join(" ", command));
 
         Process process = start(command);
-        // Read stdout fully before waitFor so a large payload can't fill the pipe
-        // buffer and deadlock the process.
-        String stdout = drain(process.getInputStream());
-        String stderr = drain(process.getErrorStream());
+        registry.register(runId, process);
+        try {
+            // Read stdout fully before waitFor so a large payload can't fill the
+            // pipe buffer and deadlock the process.
+            String stdout = drain(process.getInputStream());
+            String stderr = drain(process.getErrorStream());
 
-        awaitExit(process, command);
-        int exit = process.exitValue();
-        if (exit != 0) {
-            throw new OhaExecutionException(
-                    "oha exited with status " + exit + ": " + stderr.strip());
+            awaitExit(process, command);
+            int exit = process.exitValue();
+            if (exit != 0) {
+                throw new OhaExecutionException(
+                        "oha exited with status " + exit + ": " + stderr.strip());
+            }
+            return parse(stdout);
+        } catch (RuntimeException e) {
+            // A cancel calls destroyForcibly(), which can surface as a killed exit
+            // code OR as "Stream closed" while draining. Either way, if this run
+            // was cancelled, report it as a cancellation rather than a failure.
+            if (registry.wasCancelled(runId)) {
+                throw new OhaCancelledException("Run " + runId + " was cancelled");
+            }
+            throw e;
+        } finally {
+            registry.unregister(runId);
         }
-        return parse(stdout);
     }
 
     private Process start(List<String> command) {

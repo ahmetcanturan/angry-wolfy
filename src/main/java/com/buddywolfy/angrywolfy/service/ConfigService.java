@@ -1,7 +1,7 @@
 package com.buddywolfy.angrywolfy.service;
 
 import com.buddywolfy.angrywolfy.entity.Config;
-import com.buddywolfy.angrywolfy.entity.ConfigType;
+import com.buddywolfy.angrywolfy.enums.ConfigType;
 import com.buddywolfy.angrywolfy.repository.ConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

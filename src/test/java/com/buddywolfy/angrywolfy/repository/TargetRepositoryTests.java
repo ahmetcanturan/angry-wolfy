@@ -1,9 +1,9 @@
 package com.buddywolfy.angrywolfy.repository;
 
-import com.buddywolfy.angrywolfy.entity.HttpMethod;
+import com.buddywolfy.angrywolfy.enums.HttpMethod;
 import com.buddywolfy.angrywolfy.entity.Project;
 import com.buddywolfy.angrywolfy.entity.Target;
-import com.buddywolfy.angrywolfy.entity.TargetType;
+import com.buddywolfy.angrywolfy.enums.TargetType;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

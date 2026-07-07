@@ -1,5 +1,6 @@
 package com.buddywolfy.angrywolfy.entity;
 
+import com.buddywolfy.angrywolfy.enums.ConfigType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

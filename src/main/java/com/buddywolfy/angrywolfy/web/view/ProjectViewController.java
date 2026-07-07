@@ -1,6 +1,9 @@
 package com.buddywolfy.angrywolfy.web.view;
 
+import com.buddywolfy.angrywolfy.entity.Config;
+import com.buddywolfy.angrywolfy.service.ConfigService;
 import com.buddywolfy.angrywolfy.service.ProjectService;
+import com.buddywolfy.angrywolfy.service.TargetService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,15 +13,23 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/projects")
 public class ProjectViewController {
 
     private final ProjectService projectService;
+    private final ConfigService configService;
+    private final TargetService targetService;
 
-    public ProjectViewController(ProjectService projectService) {
+    public ProjectViewController(ProjectService projectService, ConfigService configService,
+                                  TargetService targetService) {
         this.projectService = projectService;
+        this.configService = configService;
+        this.targetService = targetService;
     }
 
     @GetMapping
@@ -39,8 +50,31 @@ public class ProjectViewController {
         if (bindingResult.hasErrors()) {
             return "projects/form";
         }
-        projectService.create(form.getName(), form.getDescription(), form.getRepositoryPath());
-        return "redirect:/projects";
+        var project = projectService.create(form.getName(), form.getDescription(), form.getRepositoryPath());
+        return "redirect:/projects/" + project.getId();
+    }
+
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Long id,
+                          @RequestParam(required = false) Long config,
+                          Model model) {
+        var project = projectService.getById(id);
+        List<Config> configs = configService.getByProjectId(id);
+
+        Config activeConfig = null;
+        if (!configs.isEmpty()) {
+            activeConfig = configs.stream()
+                    .filter(c -> c.getId().equals(config))
+                    .findFirst()
+                    .orElse(configs.get(0));
+        }
+
+        model.addAttribute("project", project);
+        model.addAttribute("configs", configs);
+        model.addAttribute("targets", targetService.getByProjectId(id));
+        model.addAttribute("activeConfigId", activeConfig != null ? activeConfig.getId() : null);
+        model.addAttribute("activeConfig", activeConfig);
+        return "projects/detail";
     }
 
     @GetMapping("/{id}/edit")
@@ -62,7 +96,7 @@ public class ProjectViewController {
             return "projects/form";
         }
         projectService.update(id, form.getName(), form.getDescription(), form.getRepositoryPath());
-        return "redirect:/projects";
+        return "redirect:/projects/" + id;
     }
 
     @PostMapping("/{id}/delete")

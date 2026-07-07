@@ -1,7 +1,7 @@
 package com.buddywolfy.angrywolfy.repository;
 
 import com.buddywolfy.angrywolfy.entity.Config;
-import com.buddywolfy.angrywolfy.entity.ConfigType;
+import com.buddywolfy.angrywolfy.enums.ConfigType;
 import com.buddywolfy.angrywolfy.entity.Project;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;

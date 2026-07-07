@@ -1,9 +1,9 @@
 package com.buddywolfy.angrywolfy.service;
 
-import com.buddywolfy.angrywolfy.entity.HttpMethod;
+import com.buddywolfy.angrywolfy.enums.HttpMethod;
 import com.buddywolfy.angrywolfy.entity.Project;
 import com.buddywolfy.angrywolfy.entity.Target;
-import com.buddywolfy.angrywolfy.entity.TargetType;
+import com.buddywolfy.angrywolfy.enums.TargetType;
 import com.buddywolfy.angrywolfy.repository.TargetRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

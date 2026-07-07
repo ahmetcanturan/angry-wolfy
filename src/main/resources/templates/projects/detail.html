@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${project.name} + ' — Angrywolfy'">Project detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1a2740;
+        }
+        a { text-decoration: none; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cfd8e6; border-radius: 8px; border: 2px solid #eef2f7; }
+
+        .page { min-height: 100vh; display: flex; flex-direction: column; background: #f7f9fc; }
+
+        /* top nav */
+        .topnav {
+            height: 60px; flex-shrink: 0; background: #0e2340;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
+        }
+        .topnav-left { display: flex; align-items: center; gap: 36px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 30px; height: 30px; display: block; }
+        .brand span { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+        .navlinks { display: flex; gap: 4px; }
+        .navlinks span, .navlinks a {
+            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 7px 12px;
+        }
+        .navlinks a.active {
+            font-weight: 700; color: #fff; padding: 7px 14px;
+            background: rgba(255,255,255,.1); border-radius: 9px;
+        }
+        .selfhosted {
+            display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+            color: #6a8cb5; font-family: 'JetBrains Mono', monospace;
+        }
+        .selfhosted .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #3ad07f;
+            box-shadow: 0 0 0 3px rgba(58,208,127,.2);
+        }
+
+        /* project band */
+        .band { background: #fff; border-bottom: 1px solid #e6ebf2; }
+        .band-inner { max-width: 1080px; margin: 0 auto; padding: 26px 32px 0; }
+        .breadcrumb {
+            font-size: 12px; color: #93a1b5; font-weight: 600;
+            display: flex; gap: 6px; align-items: center;
+        }
+        .breadcrumb .sep { opacity: .5; }
+        .breadcrumb .current { color: #5e82ad; }
+
+        .headline { display: flex; align-items: flex-start; justify-content: space-between; margin-top: 12px; gap: 16px; flex-wrap: wrap; }
+        .headline-left { display: flex; align-items: center; gap: 16px; }
+        .logo-tile {
+            width: 54px; height: 54px; border-radius: 15px;
+            background: linear-gradient(140deg,#1b355d,#0e2340);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .logo-tile img { width: 40px; height: 40px; display: block; }
+        .headline h1 { margin: 0; font-size: 27px; font-weight: 800; color: #12233f; letter-spacing: -.02em; }
+        .headline p.desc { margin: 5px 0 0; font-size: 14px; color: #64748b; }
+        .headline p.desc.placeholder { font-style: italic; color: #9aa7bb; }
+        .headline-actions { display: flex; align-items: center; gap: 10px; }
+        .btn-ghost {
+            font-family: inherit; font-size: 14px; font-weight: 700; color: #3d5580;
+            background: #eef2f8; border: 1px solid #e0e7f1; padding: 11px 16px; border-radius: 11px; cursor: pointer;
+        }
+        .btn-dark {
+            display: inline-flex; align-items: center; gap: 9px; background: #0e2340; color: #fff;
+            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px 20px;
+            border-radius: 11px; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(14,35,64,.6);
+        }
+        .btn-dark .play {
+            width: 0; height: 0; border-left: 9px solid #6a8cb5; border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+        }
+
+        .meta-row {
+            display: flex; gap: 24px; margin-top: 16px; font-size: 12.5px; color: #7c8aa0; flex-wrap: wrap;
+        }
+        .meta-row span { display: flex; align-items: center; gap: 7px; }
+        .meta-row .repo { font-family: 'JetBrains Mono', monospace; }
+        .repo-box { width: 13px; height: 13px; border: 1.5px solid #b8c4d6; border-radius: 3px; display: inline-block; }
+
+        /* env tabs */
+        .env-row { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 16px; flex-wrap: wrap; }
+        .env-tabs-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-x: auto; padding-bottom: 2px; }
+        .env-label {
+            font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #93a1b5; flex-shrink: 0;
+        }
+        .env-tabs {
+            display: inline-flex; background: #eef2f7; padding: 4px; border-radius: 12px; gap: 2px;
+        }
+        .env-tab {
+            font-family: inherit; cursor: pointer; border: none; font-size: 13px; font-weight: 700;
+            padding: 8px 14px; border-radius: 9px; background: transparent; color: #5f6f88;
+            display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+        }
+        .env-tab.active { background: #fff; color: #12233f; box-shadow: 0 2px 6px -2px rgba(14,35,64,.25); }
+        .env-tab .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .btn-manage {
+            flex-shrink: 0; font-family: inherit; font-size: 13px; font-weight: 700; color: #5e82ad;
+            background: #eaf0f8; border: 1px dashed #b9cbe2; padding: 9px 13px; border-radius: 11px; cursor: pointer;
+        }
+
+        .active-baseurl-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-bottom: 18px; flex-wrap: wrap; }
+        .active-baseurl-row .url {
+            font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #3d5580; font-weight: 500;
+        }
+        .active-baseurl-row .hdr { font-size: 12px; color: #93a1b5; }
+
+        .empty-state {
+            padding: 24px; border: 1.5px dashed #cdd8e6; border-radius: 14px; background: #fbfcfe;
+            color: #7c8aa0; font-size: 13.5px; margin: 16px 0 20px;
+        }
+        .empty-state a { color: #5e82ad; font-weight: 700; }
+
+        /* badges (from contract section 4) */
+        .badge {
+            font-size: 10px; font-weight: 800; letter-spacing: .05em; padding: 3px 7px;
+            border-radius: 6px; text-transform: uppercase; white-space: nowrap; display: inline-block;
+        }
+        .method-badge {
+            font-size: 11px; font-weight: 800; letter-spacing: .03em; padding: 5px 0; width: 56px;
+            text-align: center; border-radius: 7px; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;
+            display: inline-block;
+        }
+        .type-badge {
+            background: #f3f6fb; color: #5e82ad; border: 1px solid #dde5f0; font-size: 9.5px;
+            font-weight: 700; letter-spacing: .06em; padding: 3px 7px; border-radius: 6px;
+            text-transform: uppercase; white-space: nowrap; display: inline-block;
+        }
+
+        /* targets section */
+        .content { flex: 1; max-width: 1080px; width: 100%; margin: 0 auto; padding: 26px 32px 60px; }
+        .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .section-head h2 { margin: 0; font-size: 18px; font-weight: 800; color: #12233f; }
+        .section-head .sub { font-size: 13px; color: #7c8aa0; margin-top: 2px; }
+        .btn-new {
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; background: #5e82ad;
+            border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer;
+        }
+
+        .targets-list { display: flex; flex-direction: column; gap: 12px; }
+        .target-card {
+            position: relative; background: #fff; border: 1px solid #e6ebf2; border-radius: 15px;
+            overflow: hidden; box-shadow: 0 1px 2px rgba(14,35,64,.04);
+        }
+        .target-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px;
+            flex-wrap: wrap;
+        }
+        .target-row-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .target-corner-actions { position: absolute; top: 6px; left: 6px; z-index: 2; display: flex; gap: 3px; }
+        .target-icon-btn {
+            width: 17px; height: 17px; border-radius: 50%; border: none;
+            font-size: 9px; font-weight: 700; line-height: 1;
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            padding: 0; text-decoration: none; transition: background .12s ease, color .12s ease;
+        }
+        .target-icon-btn.edit { background: #e4eefb; color: #1e5bb8; }
+        .target-icon-btn.edit:hover { background: #cfe0f6; }
+        .target-icon-btn.delete { background: #fde8e8; color: #c0392b; }
+        .target-icon-btn.delete:hover { background: #f9d5d5; }
+        .target-name { font-size: 15px; font-weight: 700; color: #1a2740; }
+        .target-path {
+            font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #7c8aa0; margin-top: 3px;
+        }
+        .target-path .prefix { color: #c2ccdb; }
+        .target-row-right { display: flex; align-items: center; gap: 18px; flex-shrink: 0; flex-wrap: wrap; }
+        .rps-block { text-align: right; }
+        .rps-value { font-size: 15px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
+        .rps-label { font-size: 10.5px; color: #93a1b5; font-weight: 600; letter-spacing: .03em; }
+        .row-actions { display: flex; gap: 8px; }
+        .btn-small {
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #3d5580; background: #eef2f8;
+            border: 1px solid #e0e7f1; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+        }
+        .btn-small.danger { color: #c0392b; }
+        .btn-config {
+            display: inline-flex; align-items: center; justify-content: center; font-family: inherit;
+            font-size: 15px; line-height: 1; color: #3d5580; background: #eef2f8; border: 1px solid #e0e7f1;
+            width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+        }
+        .btn-config.open { background: #dbe4f1; color: #1e3a63; border-color: #c6d3e6; }
+
+        /* inline run-config panel */
+        .run-config-panel {
+            border-top: 1px solid #eef2f7; background: #fbfcfe; padding: 16px 20px;
+        }
+        .rc-grid {
+            display: flex; flex-wrap: wrap; gap: 16px 22px; align-items: flex-end;
+        }
+        .rc-field { display: flex; flex-direction: column; gap: 6px; }
+        .rc-label {
+            font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #93a1b5;
+        }
+        .rc-input {
+            width: 120px; border: 1px solid #dbe3ee; border-radius: 9px; padding: 8px 11px;
+            font-size: 13px; color: #1a2740; outline: none; background: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .rc-input:focus { border-color: #6a8cb5; box-shadow: 0 0 0 3px rgba(106,140,181,.15); }
+        .rc-toggle { display: inline-flex; background: #eef2f7; padding: 3px; border-radius: 9px; gap: 2px; }
+        .rc-toggle-btn {
+            font-family: inherit; cursor: pointer; border: none; font-size: 12.5px; font-weight: 700;
+            padding: 6px 13px; border-radius: 7px; background: transparent; color: #5f6f88;
+        }
+        .rc-toggle-btn.active { background: #fff; color: #12233f; box-shadow: 0 2px 6px -2px rgba(14,35,64,.25); }
+        .rc-hint { font-size: 11.5px; color: #93a1b5; margin-top: 12px; }
+
+        /* running-wolf overlay */
+        .run-overlay {
+            border-top: 1px solid #eef2f7;
+            background: linear-gradient(180deg, #f4f7fc, #eef2f8);
+        }
+        .run-overlay-inner {
+            display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 22px 20px;
+        }
+        /* horizontal lane the wolf gallops across */
+        .wolf-track {
+            position: relative; width: 100%; height: 96px; overflow: hidden;
+        }
+        .wolf-runner {
+            position: absolute; top: 0; left: -110px;
+            width: 96px; height: 96px;
+            background-image: url('/assets/run/frame1.png');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+        }
+        /* run left -> right across the track; loops so the wolf respawns on the left.
+           left is relative to the track (overflow:hidden), so 100% = full lane width. */
+        .wolf-runner.running { animation: wolf-gallop 2.4s linear infinite; }
+        @keyframes wolf-gallop {
+            from { left: -110px; }
+            to   { left: 100%; }
+        }
+        /* JS swaps frame1..6 via the .wolf-frameN classes for the leg cycle */
+        .wolf-runner.wolf-f1 { background-image: url('/assets/run/frame1.png'); }
+        .wolf-runner.wolf-f2 { background-image: url('/assets/run/frame2.png'); }
+        .wolf-runner.wolf-f3 { background-image: url('/assets/run/frame3.png'); }
+        .wolf-runner.wolf-f4 { background-image: url('/assets/run/frame4.png'); }
+        .wolf-runner.wolf-f5 { background-image: url('/assets/run/frame5.png'); }
+        .wolf-runner.wolf-f6 { background-image: url('/assets/run/frame6.png'); }
+        .run-overlay-text {
+            font-size: 13px; font-weight: 700; color: #3d5580;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .btn-cancel {
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #c0392b;
+            background: #fde8e8; border: 1px solid #f4cfcb; padding: 8px 18px; border-radius: 9px; cursor: pointer;
+        }
+        .btn-cancel:hover { background: #f9d5d5; }
+        .btn-cancel:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* latency distribution bar chart */
+        .latency-chart {
+            display: flex; align-items: flex-end; gap: 10px; height: 150px;
+            padding: 10px 4px 0; border-bottom: 1px solid #e6ebf2;
+        }
+        .lat-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
+        .lat-bar {
+            width: 100%; max-width: 34px; border-radius: 5px 5px 0 0;
+            background: linear-gradient(180deg, #5e82ad, #3d5580); min-height: 2px;
+            transition: height .4s ease;
+        }
+        .lat-bar-val { font-size: 10px; font-weight: 700; color: #3d5580; font-family: 'JetBrains Mono', monospace; }
+        .lat-bar-label { font-size: 10px; font-weight: 700; color: #93a1b5; }
+        .status-caption { font-size: 11.5px; color: #7c8aa0; margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+        .btn-run {
+            display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 13px;
+            font-weight: 700; color: #fff; background: #0e2340; border: none; padding: 8px 15px;
+            border-radius: 9px; cursor: pointer;
+        }
+        .btn-run .play {
+            width: 0; height: 0; border-left: 7px solid #6a8cb5; border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+        }
+        .btn-run:disabled, .btn-small:disabled { opacity: .5; cursor: not-allowed; }
+
+        details.stats-panel > summary {
+            cursor: pointer; list-style: none; border-top: 1px solid #eef2f7; padding: 10px 20px;
+            font-size: 12.5px; font-weight: 700; color: #5e82ad; background: #fbfcfe;
+        }
+        details.stats-panel > summary::-webkit-details-marker { display: none; }
+        details.stats-panel > summary::marker { content: ""; }
+        details.stats-panel[open] > summary { border-bottom: 1px solid #eef2f7; }
+        .stats-heading {
+            font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #93a1b5;
+            margin-bottom: 12px;
+        }
+        .stat-tile { background: #fff; border: 1px solid #e6ebf2; border-radius: 12px; padding: 14px; }
+        .stat-tile .label { font-size: 11px; font-weight: 700; color: #93a1b5; letter-spacing: .04em; }
+        .stat-tile .value { font-size: 22px; font-weight: 800; color: #12233f; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+        .no-runs-msg {
+            font-size: 13px; color: #7c8aa0; font-style: italic; margin-top: 8px;
+        }
+
+        /* ---- results dashboard ---- */
+        .dash { border-top: 1px solid #eef2f7; background: #fbfcfe; padding: 22px 24px; }
+        .dash-empty { font-size: 13px; color: #7c8aa0; font-style: italic; }
+        .dash-body { display: flex; flex-direction: column; gap: 22px; }
+
+        /* hero row: big throughput number + key tiles */
+        .dash-hero { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: stretch; }
+        .hero-rps {
+            background: linear-gradient(145deg,#12294a,#0e2340); border-radius: 16px; color: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 22px 16px;
+            box-shadow: 0 10px 24px -12px rgba(14,35,64,.55);
+        }
+        .hero-val { font-size: 40px; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: -.02em; line-height: 1; }
+        .hero-unit { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7fa0cc; margin-top: 8px; }
+        .hero-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* charts */
+        .dash-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .dash-outcome { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: stretch; }
+        .chart-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; padding: 16px 18px; }
+        .chart-box { height: 210px; position: relative; }
+        .donut-box { height: 190px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .chart-sub { font-size: 11.5px; color: #93a1b5; margin-top: 10px; line-height: 1.4; }
+
+        /* status/error breakdown list */
+        .breakdown-list { display: flex; flex-direction: column; gap: 8px; }
+        .bd-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 9px 12px; border-radius: 10px; background: #f7f9fc; border: 1px solid #eef2f7;
+        }
+        .bd-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .bd-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .bd-label { font-size: 12.5px; font-weight: 700; color: #3d5580; font-family: 'JetBrains Mono', monospace; }
+        .bd-count { font-size: 13px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
+        .bd-empty { font-size: 12.5px; color: #93a1b5; font-style: italic; padding: 4px 2px; }
+
+        @media (max-width: 820px) {
+            .dash-hero { grid-template-columns: 1fr; }
+            .dash-charts { grid-template-columns: 1fr; }
+            .dash-outcome { grid-template-columns: 1fr; }
+        }
+
+        /* run test section */
+        details.run-test {
+            margin-top: 30px; background: #fff; border: 1px solid #e6ebf2; border-radius: 15px; overflow: hidden;
+        }
+        details.run-test > summary {
+            cursor: pointer; list-style: none; padding: 18px 22px; font-size: 15px; font-weight: 800; color: #12233f;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        details.run-test > summary::-webkit-details-marker { display: none; }
+        details.run-test > summary::marker { content: ""; }
+        details.run-test > summary .sub { font-size: 12.5px; font-weight: 500; color: #8a97ab; margin-top: 2px; }
+        .run-test-body { padding: 4px 22px 22px; display: flex; flex-direction: column; gap: 20px; }
+        .picker-heading {
+            font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #93a1b5; margin-bottom: 10px;
+        }
+        .radio-list { display: flex; flex-direction: column; gap: 8px; }
+        .radio-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 13px;
+            border-radius: 11px; border: 1.5px solid #e6ebf2; background: #fff; cursor: pointer;
+        }
+        .radio-row input[type="radio"] { margin-right: 9px; }
+        .radio-row-left { display: flex; align-items: center; gap: 9px; }
+        .radio-row .url { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #7c8aa0; }
+        .duration-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .duration-pill {
+            font-family: inherit; cursor: pointer; font-size: 13px; font-weight: 700; padding: 9px 18px;
+            border-radius: 9px; border: 1.5px solid #e6ebf2; background: #fff; color: #5f6f88;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .run-footer {
+            padding: 18px 0 0; border-top: 1px solid #eef2f7; margin-top: 4px;
+            display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;
+        }
+        .btn-launch-disabled {
+            display: inline-flex; align-items: center; gap: 9px; background: #b8c4d6; color: #fff;
+            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 12px 22px;
+            border-radius: 11px; cursor: not-allowed;
+        }
+        .btn-dark:disabled { opacity: .5; cursor: not-allowed; }
+        .run-result {
+            font-size: 13px; padding: 13px 15px; border-radius: 11px; font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .run-result.running { background: #eef2f8; color: #5e82ad; }
+        .run-result.ok { background: #e9f6ef; color: #1f7a4d; border: 1px solid #cdeadb; }
+        .run-result.error { background: #fdeceb; color: #c0392b; border: 1px solid #f4cfcb; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- top nav -->
+    <header class="topnav">
+        <div class="topnav-left">
+            <div class="brand">
+                <img src="/assets/wolfy.png" alt="Angrywolfy">
+                <span>Angrywolfy</span>
+            </div>
+            <nav class="navlinks">
+                <span>Overview</span>
+                <a th:href="@{/projects}" class="active">Projects</a>
+                <span>Test Runs</span>
+                <span>Reports</span>
+            </nav>
+        </div>
+        <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+    </header>
+
+    <!-- project band + env tabs -->
+    <div class="band">
+        <div class="band-inner">
+            <div class="breadcrumb">
+                <a th:href="@{/projects}" style="color:#93a1b5;">Projects</a>
+                <span class="sep">/</span>
+                <span class="current" th:text="${project.name}">Project name</span>
+            </div>
+
+            <div class="headline">
+                <div class="headline-left">
+                    <div class="logo-tile">
+                        <img src="/assets/wolfy.png" alt="">
+                    </div>
+                    <div>
+                        <h1 th:text="${project.name}">Project name</h1>
+                        <p class="desc" th:if="${project.description != null and !#strings.isEmpty(project.description.trim())}"
+                           th:text="${project.description}">Description</p>
+                        <p class="desc placeholder" th:if="${project.description == null or #strings.isEmpty(project.description.trim())}">
+                            No description yet
+                        </p>
+                    </div>
+                </div>
+                <div class="headline-actions">
+                    <a th:href="@{/projects/{id}/edit(id=${project.id})}" class="btn-ghost">Settings</a>
+                </div>
+            </div>
+
+            <div class="meta-row">
+                <span class="repo" th:if="${project.repositoryPath != null and !#strings.isEmpty(project.repositoryPath.trim())}">
+                    <span class="repo-box"></span><span th:text="${project.repositoryPath}">acme/repo</span>
+                </span>
+                <span th:text="${#lists.size(targets)} + ' targets'">0 targets</span>
+                <span th:text="${#lists.size(configs)} + ' environments'">0 environments</span>
+                <span th:if="${project.createdAt != null}"
+                      th:text="'Created ' + ${#temporals.format(project.createdAt, 'MMM yyyy')}">Created Mar 2026</span>
+            </div>
+
+            <!-- environment tabs (configs) -->
+            <div class="env-row" th:if="${!#lists.isEmpty(configs)}">
+                <div class="env-tabs-wrap">
+                    <span class="env-label">Env</span>
+                    <div class="env-tabs">
+                        <a th:each="c : ${configs}"
+                           th:href="@{/projects/{id}(id=${project.id}, config=${c.id})}"
+                           th:classappend="${activeConfigId != null and activeConfigId.equals(c.id) ? ' active' : ''}"
+                           class="env-tab">
+                            <span class="dot"
+                                  th:with="fg=${c.type != null ? (c.type.name() == 'LOCAL' ? '#586274' : (c.type.name() == 'DEVELOPMENT' ? '#1e5bb8' : (c.type.name() == 'STAGING' ? '#a6710a' : (c.type.name() == 'PREPRODUCTION' ? '#6b3fc0' : (c.type.name() == 'PRODUCTION' ? '#c0392b' : '#586274'))))) : '#586274'}"
+                                  th:style="${'background:' + fg}"></span>
+                            <span th:text="${c.name}">Env name</span>
+                        </a>
+                    </div>
+                    <a th:href="@{/projects/{projectId}/configs/new(projectId=${project.id})}" class="btn-manage">＋ Manage</a>
+                </div>
+            </div>
+
+            <!-- active base url -->
+            <div class="active-baseurl-row" th:if="${activeConfig != null}">
+                <span class="badge"
+                      th:with="bgfg=${activeConfig.type != null ? activeConfig.type.name() : 'LOCAL'}"
+                      th:style="${
+                          bgfg == 'DEVELOPMENT' ? 'background:#e4eefb;color:#1e5bb8' :
+                          (bgfg == 'STAGING' ? 'background:#fdf1dd;color:#a6710a' :
+                          (bgfg == 'PREPRODUCTION' ? 'background:#efe8fb;color:#6b3fc0' :
+                          (bgfg == 'PRODUCTION' ? 'background:#fde8e8;color:#c0392b' :
+                          'background:#eef1f6;color:#586274')))
+                      }"
+                      th:text="${activeConfig.type}">LOCAL</span>
+                <span class="url" th:text="${activeConfig.baseUrl}">http://localhost:8080</span>
+                <span class="hdr" th:text="'· ' + ${#maps.size(activeConfig.headers)} + ' headers merged into every request'">· 0 headers merged into every request</span>
+            </div>
+
+            <!-- no configs empty state -->
+            <div class="empty-state" th:if="${#lists.isEmpty(configs)}">
+                No environments configured yet.
+                <a th:href="@{/projects/{projectId}/configs/new(projectId=${project.id})}">Create the first environment</a>
+                to set a base URL and headers for this project.
+            </div>
+        </div>
+    </div>
+
+    <!-- targets -->
+    <div class="content">
+        <div class="section-head">
+            <div>
+                <h2>Targets</h2>
+                <div class="sub">Endpoints to hit — click a row for its latest run.</div>
+            </div>
+            <a th:href="@{/projects/{projectId}/targets/new(projectId=${project.id})}" class="btn-new">＋ New target</a>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(targets)}">
+            No targets yet.
+            <a th:href="@{/projects/{projectId}/targets/new(projectId=${project.id})}">Add your first target</a>
+            to start load-testing this project.
+        </div>
+
+        <div class="targets-list" th:if="${!#lists.isEmpty(targets)}">
+            <div class="target-card" th:each="t : ${targets}" th:attr="data-target-id=${t.id}">
+                <div class="target-corner-actions">
+                    <a th:href="@{/targets/{id}/edit(id=${t.id})}" class="target-icon-btn edit"
+                       title="Edit target" aria-label="Edit target">✎</a>
+                    <form th:action="@{/targets/{id}/delete(id=${t.id})}" method="post" style="line-height:0;"
+                          onsubmit="return confirm('Delete this target? This cannot be undone.');">
+                        <button type="submit" class="target-icon-btn delete" title="Delete target" aria-label="Delete target">✕</button>
+                    </form>
+                </div>
+                <div class="target-row">
+                    <div class="target-row-left">
+                        <span class="method-badge"
+                              th:with="m=${t.method != null ? t.method.name() : 'GET'}"
+                              th:style="${
+                                  m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
+                                  (m == 'PUT' ? 'background:#fdf1dd;color:#a6710a' :
+                                  (m == 'PATCH' ? 'background:#dff4f3;color:#0f8a80' :
+                                  (m == 'DELETE' ? 'background:#fde8e8;color:#c0392b' :
+                                  ((m == 'HEAD' or m == 'OPTIONS') ? 'background:#eef1f6;color:#586274' :
+                                  'background:#e3f4ea;color:#1f8a4c'))))
+                              }"
+                              th:text="${t.method}">GET</span>
+                        <div style="min-width:0;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span class="target-name" th:text="${t.name}">Target name</span>
+                                <span class="type-badge" th:text="${t.type}">REST</span>
+                            </div>
+                            <div class="target-path">
+                                <span class="prefix" th:if="${activeConfig != null}" th:text="${activeConfig.baseUrl}"></span><span th:text="${t.path}">/v1/path</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="target-row-right">
+                        <div class="rps-block">
+                            <div class="rps-value" th:text="${t.rps != null ? t.rps : '—'}">200</div>
+                            <div class="rps-label">TARGET RPS</div>
+                        </div>
+                        <div class="row-actions">
+                            <button type="button" class="btn-config js-config-toggle"
+                                    title="Configure run" aria-label="Configure run">⚙</button>
+                            <button type="button" class="btn-run js-run-target"
+                                    th:attr="data-target-id=${t.id}, data-target-name=${t.name}">
+                                <span class="play"></span>Run
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- inline run-config panel (hidden until Configure is clicked) -->
+                <div class="run-config-panel js-config-panel" hidden>
+                    <div class="rc-grid">
+                        <div class="rc-field">
+                            <label class="rc-label">Load by</label>
+                            <div class="rc-toggle">
+                                <button type="button" class="rc-toggle-btn active js-loadby" data-mode="requests">Requests</button>
+                                <button type="button" class="rc-toggle-btn js-loadby" data-mode="duration">Duration</button>
+                            </div>
+                        </div>
+                        <div class="rc-field js-amount-requests">
+                            <label class="rc-label">Requests</label>
+                            <input type="number" class="rc-input js-cfg-requests" min="1" step="1" value="200"/>
+                        </div>
+                        <div class="rc-field js-amount-duration" hidden>
+                            <label class="rc-label">Duration (s)</label>
+                            <input type="number" class="rc-input js-cfg-duration" min="1" step="1" value="30"/>
+                        </div>
+                        <div class="rc-field">
+                            <label class="rc-label">Concurrency</label>
+                            <input type="number" class="rc-input js-cfg-concurrency" min="1" step="1" value="10"/>
+                        </div>
+                        <div class="rc-field">
+                            <label class="rc-label">Rate limit (req/s)</label>
+                            <input type="number" class="rc-input js-cfg-rps" min="0.01" step="any"
+                                   placeholder="unlimited" th:attr="value=${t.rps != null ? t.rps : ''}"/>
+                        </div>
+                    </div>
+                    <div class="rc-hint">Leave rate limit blank to send as fast as possible.</div>
+                </div>
+
+                <!-- running-wolf overlay (shown only while a test is in flight) -->
+                <div class="run-overlay js-run-overlay" hidden>
+                    <div class="run-overlay-inner">
+                        <div class="wolf-track">
+                            <div class="wolf-runner js-wolf"></div>
+                        </div>
+                        <div class="run-overlay-text js-overlay-text">Wolf attacking..</div>
+                        <button type="button" class="btn-cancel js-cancel-run">Cancel</button>
+                    </div>
+                </div>
+
+                <details class="stats-panel js-stats-panel">
+                    <summary>Show latest run stats</summary>
+                    <div class="dash">
+                        <!-- empty state before any run -->
+                        <div class="dash-empty js-dash-empty">No runs yet — trigger a load test to see results here.</div>
+
+                        <!-- results dashboard (revealed after a run) -->
+                        <div class="dash-body js-dash-body" hidden>
+                            <!-- headline: hero throughput + key numbers -->
+                            <div class="dash-hero">
+                                <div class="hero-rps">
+                                    <div class="hero-val js-stat-rps">—</div>
+                                    <div class="hero-unit">req / sec</div>
+                                </div>
+                                <div class="hero-tiles">
+                                    <div class="stat-tile">
+                                        <div class="label">TOTAL REQUESTS</div>
+                                        <div class="value js-stat-total">—</div>
+                                    </div>
+                                    <div class="stat-tile">
+                                        <div class="label">SUCCESS RATE</div>
+                                        <div class="value js-stat-success">—</div>
+                                    </div>
+                                    <div class="stat-tile">
+                                        <div class="label">AVG / SLOWEST</div>
+                                        <div class="value js-stat-avgslow" style="font-size:15px;">—</div>
+                                    </div>
+                                    <div class="stat-tile">
+                                        <div class="label">DATA TRANSFERRED</div>
+                                        <div class="value js-stat-data" style="font-size:16px;">—</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- two main charts side by side -->
+                            <div class="dash-charts">
+                                <div class="chart-card">
+                                    <div class="stats-heading">Response-time distribution</div>
+                                    <div class="chart-box"><canvas class="js-histogram"></canvas></div>
+                                    <div class="chart-sub">How many requests fell in each latency bucket — a long right tail means slow outliers.</div>
+                                </div>
+                                <div class="chart-card">
+                                    <div class="stats-heading">Latency percentiles</div>
+                                    <div class="chart-box"><canvas class="js-percentiles"></canvas></div>
+                                    <div class="chart-sub">A sharp climb after p95 means your tail latency is the risk.</div>
+                                </div>
+                            </div>
+
+                            <!-- outcome: success/error donut + status & error breakdown -->
+                            <div class="dash-outcome">
+                                <div class="chart-card donut-card">
+                                    <div class="stats-heading">Outcome</div>
+                                    <div class="donut-box"><canvas class="js-donut"></canvas></div>
+                                </div>
+                                <div class="chart-card breakdown-card">
+                                    <div class="stats-heading">Status codes &amp; errors</div>
+                                    <div class="breakdown-list js-breakdown"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- run load test (static, zero JS, no backend yet) -->
+        <details class="run-test">
+            <summary>
+                <div>
+                    <div>Run load test</div>
+                    <div class="sub">Combine an environment with an endpoint.</div>
+                </div>
+            </summary>
+            <div class="run-test-body">
+                <div th:if="${!#lists.isEmpty(configs)}">
+                    <div class="picker-heading">Environment</div>
+                    <div class="radio-list">
+                        <label class="radio-row" th:each="c, iter : ${configs}">
+                            <div class="radio-row-left">
+                                <input type="radio" name="runEnv" th:value="${c.id}" th:checked="${iter.first}"/>
+                                <span th:text="${c.name}">Env name</span>
+                                <span class="badge"
+                                      th:with="bgfg=${c.type != null ? c.type.name() : 'LOCAL'}"
+                                      th:style="${
+                                          bgfg == 'DEVELOPMENT' ? 'background:#e4eefb;color:#1e5bb8' :
+                                          (bgfg == 'STAGING' ? 'background:#fdf1dd;color:#a6710a' :
+                                          (bgfg == 'PREPRODUCTION' ? 'background:#efe8fb;color:#6b3fc0' :
+                                          (bgfg == 'PRODUCTION' ? 'background:#fde8e8;color:#c0392b' :
+                                          'background:#eef1f6;color:#586274')))
+                                      }"
+                                      th:text="${c.type}">LOCAL</span>
+                            </div>
+                            <span class="url" th:text="${c.baseUrl}">http://localhost:8080</span>
+                        </label>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(configs)}" class="no-runs-msg">No environments yet — create one above first.</div>
+
+                <div th:if="${!#lists.isEmpty(targets)}">
+                    <div class="picker-heading">Target</div>
+                    <div class="radio-list">
+                        <label class="radio-row" th:each="t, iter : ${targets}">
+                            <div class="radio-row-left">
+                                <input type="radio" name="runTarget" th:value="${t.id}" th:checked="${iter.first}"/>
+                                <span th:text="${t.name}">Target name</span>
+                            </div>
+                            <span class="url" th:text="${t.path}">/v1/path</span>
+                        </label>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(targets)}" class="no-runs-msg">No targets yet — add one above first.</div>
+
+                <div>
+                    <div class="picker-heading">Duration</div>
+                    <div class="duration-group">
+                        <label class="duration-pill"><input type="radio" name="runDuration" value="30" checked/> 30s</label>
+                        <label class="duration-pill"><input type="radio" name="runDuration" value="60"/> 60s</label>
+                        <label class="duration-pill"><input type="radio" name="runDuration" value="120"/> 2m</label>
+                        <label class="duration-pill"><input type="radio" name="runDuration" value="300"/> 5m</label>
+                    </div>
+                </div>
+
+                <div id="runResult" class="run-result" hidden></div>
+
+                <div class="run-footer">
+                    <button type="button" id="launchTest" class="btn-dark"
+                            th:disabled="${#lists.isEmpty(configs) or #lists.isEmpty(targets)}">
+                        <span class="play"></span>
+                        <span class="launch-label">Launch test</span>
+                    </button>
+                </div>
+            </div>
+        </details>
+    </div>
+</div>
+
+<script th:inline="none">
+/*<![CDATA[*/
+(function () {
+    // Formatting helpers -------------------------------------------------
+    const ms = (seconds) => (seconds * 1000).toFixed(1) + ' ms';
+    const pct = (rate) => (rate * 100).toFixed(1) + '%';
+    const num = (n) => Math.round(n).toLocaleString();
+    const bytes = (b) => {
+        if (b == null) return '—';
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(2) + ' MB';
+    };
+
+    // Reads whichever env radio is selected in the run-test picker; falls
+    // back to the first available env if the picker isn't rendered.
+    function selectedConfigId() {
+        const checked = document.querySelector('input[name="runEnv"]:checked');
+        if (checked) return checked.value;
+        const first = document.querySelector('input[name="runEnv"]');
+        return first ? first.value : null;
+    }
+
+    // Fires the run. Sends our runId so a concurrent DELETE can cancel it, and
+    // wires an AbortController so Cancel also stops the browser waiting.
+    async function runLoadTest(targetId, options, runId, signal) {
+        const configId = selectedConfigId();
+        if (!configId) {
+            throw new Error('Pick an environment first.');
+        }
+        const url = `/api/targets/${targetId}/run?configId=${configId}&runId=${encodeURIComponent(runId)}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(options),
+            signal: signal
+        });
+        const data = await res.json();
+        if (res.status === 409) {
+            const e = new Error(data.message || 'Run cancelled');
+            e.cancelled = true;
+            throw e;
+        }
+        if (!res.ok) {
+            throw new Error(data.message || `Request failed (${res.status})`);
+        }
+        return data;
+    }
+
+    function cancelRun(runId) {
+        // Fire-and-forget; server kills the oha process if still live.
+        fetch(`/api/runs/${encodeURIComponent(runId)}`, { method: 'DELETE' }).catch(() => {});
+    }
+
+    // The wolf gallops left -> right across its track (CSS .running loops so it
+    // respawns on the left), while JS flip-books frame1..6 for the leg motion.
+    function startWolf(card) {
+        const wolf = card.querySelector('.js-wolf');
+        let frame = 1;
+        wolf.className = 'wolf-runner js-wolf running wolf-f1';
+        return setInterval(() => {
+            frame = frame % 6 + 1;
+            wolf.className = 'wolf-runner js-wolf running wolf-f' + frame;
+        }, 110);
+    }
+
+    function showOverlay(card, text) {
+        card.querySelector('.js-overlay-text').textContent = text;
+        card.querySelector('.js-run-overlay').hidden = false;
+        const cancelBtn = card.querySelector('.js-cancel-run');
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel';
+    }
+    function hideOverlay(card) {
+        card.querySelector('.js-run-overlay').hidden = true;
+    }
+
+    // ---- charts (Chart.js) --------------------------------------------
+    const BRAND = { navy: '#0e2340', blue: '#5e82ad', blueSoft: 'rgba(94,130,173,.18)',
+                    green: '#1f8a4c', red: '#c0392b', grid: '#eef2f7', axis: '#93a1b5' };
+    Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = BRAND.axis;
+
+    // Per-card chart instances so we destroy before re-drawing.
+    const chartStore = new WeakMap();
+    function charts(card) {
+        let c = chartStore.get(card);
+        if (!c) { c = {}; chartStore.set(card, c); }
+        return c;
+    }
+    function draw(card, key, canvasSel, config) {
+        const store = charts(card);
+        if (store[key]) { store[key].destroy(); }
+        store[key] = new Chart(card.querySelector(canvasSel).getContext('2d'), config);
+    }
+
+    // Response-time histogram: bucket boundary (seconds) -> request count.
+    function drawHistogram(card, hist) {
+        const entries = Object.entries(hist || {});
+        const labels = entries.map(([sec]) => (parseFloat(sec) * 1000).toFixed(0));
+        const data = entries.map(([, count]) => count);
+        draw(card, 'hist', '.js-histogram', {
+            type: 'bar',
+            data: { labels, datasets: [{ data, backgroundColor: BRAND.blue, borderRadius: 4,
+                    hoverBackgroundColor: BRAND.navy, maxBarThickness: 46 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { title: (i) => `~${i[0].label} ms`,
+                        label: (i) => `${i.raw} requests` } } },
+                scales: {
+                    x: { title: { display: true, text: 'latency (ms)', color: BRAND.axis },
+                         grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                    y: { title: { display: true, text: 'requests', color: BRAND.axis },
+                         beginAtZero: true, grid: { color: BRAND.grid }, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // Percentile curve p50..p99.99, in milliseconds.
+    function drawPercentiles(card, p) {
+        const pts = [['p50', p.p50], ['p75', p.p75], ['p90', p.p90], ['p95', p.p95],
+                     ['p99', p.p99], ['p99.9', p['p99.9']], ['p99.99', p['p99.99']]]
+                    .filter(([, v]) => v != null);
+        draw(card, 'pct', '.js-percentiles', {
+            type: 'line',
+            data: { labels: pts.map((x) => x[0]),
+                    datasets: [{ data: pts.map((x) => x[1] * 1000), borderColor: BRAND.navy,
+                        backgroundColor: BRAND.blueSoft, fill: true, tension: .3,
+                        pointBackgroundColor: BRAND.blue, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: (i) => `${i.label}: ${i.raw.toFixed(1)} ms` } } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { title: { display: true, text: 'latency (ms)', color: BRAND.axis },
+                         beginAtZero: true, grid: { color: BRAND.grid } }
+                }
+            }
+        });
+    }
+
+    // Success/error donut.
+    function drawDonut(card, success, failed) {
+        draw(card, 'donut', '.js-donut', {
+            type: 'doughnut',
+            data: { labels: ['Success', 'Failed'],
+                    datasets: [{ data: [success, failed], backgroundColor: [BRAND.green, BRAND.red],
+                        borderWidth: 0, hoverOffset: 6 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '66%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14 } },
+                    tooltip: { callbacks: { label: (i) => `${i.label}: ${i.raw}` } } }
+            }
+        });
+    }
+
+    // Status-code + error text breakdown.
+    function renderBreakdown(card, result) {
+        const codes = Object.entries(result.statusCodeDistribution || {});
+        const errors = Object.entries(result.errorDistribution || {});
+        const el = card.querySelector('.js-breakdown');
+        const rows = [];
+        codes.forEach(([code, count]) => {
+            const ok = /^2/.test(code);
+            const color = ok ? BRAND.green : (/^3/.test(code) ? BRAND.blue : BRAND.red);
+            rows.push(`<div class="bd-row"><div class="bd-left">
+                <span class="bd-dot" style="background:${color}"></span>
+                <span class="bd-label">HTTP ${code}</span></div>
+                <span class="bd-count">${num(count)}</span></div>`);
+        });
+        errors.forEach(([msg, count]) => {
+            rows.push(`<div class="bd-row"><div class="bd-left">
+                <span class="bd-dot" style="background:${BRAND.red}"></span>
+                <span class="bd-label" title="${msg}">${msg.length > 40 ? msg.slice(0, 40) + '…' : msg}</span></div>
+                <span class="bd-count">${num(count)}</span></div>`);
+        });
+        el.innerHTML = rows.length ? rows.join('') : '<div class="bd-empty">No responses recorded.</div>';
+    }
+
+    // Fill a target card's dashboard from an OhaResult ------------------
+    function fillPanel(card, result) {
+        const s = result.summary;
+        const p = result.latencyPercentiles;
+        const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
+        const failed = Object.values(result.errorDistribution || {}).reduce((a, b) => a + b, 0)
+            + Object.entries(result.statusCodeDistribution || {})
+                .filter(([code]) => !/^2/.test(code)).reduce((a, [, c]) => a + c, 0);
+        const success = Math.max(0, total - failed);
+
+        // hero + tiles. Success rate is 2xx / total so it agrees with the donut
+        // (oha's own successRate counts any HTTP response, incl. 4xx/5xx, as success).
+        const okRate = total > 0 ? success / total : 0;
+        card.querySelector('.js-stat-rps').textContent = s.requestsPerSec.toFixed(1);
+        card.querySelector('.js-stat-total').textContent = num(total);
+        card.querySelector('.js-stat-success').textContent = pct(okRate);
+        card.querySelector('.js-stat-avgslow').textContent = `${ms(s.average)} / ${ms(s.slowest)}`;
+        card.querySelector('.js-stat-data').textContent = bytes(s.totalData);
+
+        // charts
+        drawHistogram(card, result.responseTimeHistogram);
+        drawPercentiles(card, p);
+        drawDonut(card, success, failed);
+        renderBreakdown(card, result);
+
+        card.querySelector('.js-dash-empty').hidden = true;
+        card.querySelector('.js-dash-body').hidden = false;
+        card.querySelector('.js-stats-panel').open = true;
+    }
+
+    // Configure toggle: show/hide the per-card run-config panel.
+    document.querySelectorAll('.js-config-toggle').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const card = btn.closest('.target-card');
+            const panel = card.querySelector('.js-config-panel');
+            const nowOpen = panel.hidden;
+            panel.hidden = !nowOpen;
+            btn.classList.toggle('open', nowOpen);
+        });
+    });
+
+    // Load-by toggle (Requests vs Duration) inside each config panel.
+    document.querySelectorAll('.js-config-panel').forEach((panel) => {
+        panel.querySelectorAll('.js-loadby').forEach((tgl) => {
+            tgl.addEventListener('click', () => {
+                const mode = tgl.getAttribute('data-mode');
+                panel.querySelectorAll('.js-loadby').forEach((b) =>
+                    b.classList.toggle('active', b === tgl));
+                panel.querySelector('.js-amount-requests').hidden = (mode !== 'requests');
+                panel.querySelector('.js-amount-duration').hidden = (mode !== 'duration');
+            });
+        });
+    });
+
+    // Reads the config panel into an OhaOptions body. Blank fields fall back
+    // to sensible defaults; an unset rate limit means "unlimited".
+    function readOptions(card) {
+        const panel = card.querySelector('.js-config-panel');
+        const durationMode = panel.querySelector('.js-loadby[data-mode="duration"]').classList.contains('active');
+        const opts = { concurrency: parseInt(panel.querySelector('.js-cfg-concurrency').value, 10) || 10 };
+        if (durationMode) {
+            opts.durationSeconds = parseInt(panel.querySelector('.js-cfg-duration').value, 10) || 30;
+        } else {
+            opts.requests = parseInt(panel.querySelector('.js-cfg-requests').value, 10) || 200;
+        }
+        const rps = parseFloat(panel.querySelector('.js-cfg-rps').value);
+        if (!isNaN(rps) && rps > 0) { opts.queryPerSecond = rps; }
+        return opts;
+    }
+
+    // Cheap unique run id without needing crypto.randomUUID everywhere.
+    let runCounter = 0;
+    function newRunId() {
+        runCounter += 1;
+        return 'run-' + Date.now() + '-' + runCounter;
+    }
+
+    document.querySelectorAll('.js-run-target').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const card = btn.closest('.target-card');
+            const targetId = btn.getAttribute('data-target-id');
+            const runId = newRunId();
+            const controller = new AbortController();
+
+            btn.disabled = true;
+            const original = btn.innerHTML;
+            btn.textContent = 'Running…';
+
+            const wolfTimer = startWolf(card);
+            showOverlay(card, 'Wolf attacking…');
+
+            // Wire the Cancel button for this run.
+            const cancelBtn = card.querySelector('.js-cancel-run');
+            const onCancel = () => {
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Cancelling…';
+                cancelRun(runId);       // kill the server-side oha process
+                controller.abort();     // stop waiting in the browser
+            };
+            cancelBtn.addEventListener('click', onCancel);
+
+            try {
+                const result = await runLoadTest(targetId, readOptions(card), runId, controller.signal);
+                fillPanel(card, result);
+            } catch (err) {
+                const msg = (err.cancelled || err.name === 'AbortError')
+                    ? 'Run cancelled.' : 'Failed: ' + err.message;
+                const empty = card.querySelector('.js-dash-empty');
+                empty.hidden = false;
+                empty.textContent = msg;
+                card.querySelector('.js-dash-body').hidden = true;
+                card.querySelector('.js-stats-panel').open = true;
+            } finally {
+                clearInterval(wolfTimer);
+                hideOverlay(card);
+                cancelBtn.removeEventListener('click', onCancel);
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        });
+    });
+
+    // Launch-test section: duration-based run, result rendered inline ---
+    const launchBtn = document.getElementById('launchTest');
+    const runResult = document.getElementById('runResult');
+    if (launchBtn) {
+        launchBtn.addEventListener('click', async () => {
+            const target = document.querySelector('input[name="runTarget"]:checked');
+            const duration = document.querySelector('input[name="runDuration"]:checked');
+            if (!target) { return; }
+            const targetId = target.value;
+            const durationSeconds = duration ? parseInt(duration.value, 10) : 30;
+
+            const runId = newRunId();
+            const controller = new AbortController();
+            const label = launchBtn.querySelector('.launch-label');
+            const originalLabel = label.textContent;
+            label.textContent = `Running ${durationSeconds}s test — click to cancel`;
+            runResult.hidden = false;
+            runResult.className = 'run-result running';
+            runResult.textContent = 'Load test in progress…';
+
+            // While running, the launch button doubles as Cancel.
+            const onCancel = (e) => { e.preventDefault(); cancelRun(runId); controller.abort(); };
+            launchBtn.addEventListener('click', onCancel);
+
+            try {
+                const result = await runLoadTest(
+                    targetId, { durationSeconds: durationSeconds, concurrency: 10 }, runId, controller.signal);
+                const s = result.summary;
+                const p = result.latencyPercentiles;
+                const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
+                runResult.className = 'run-result ok';
+                runResult.innerHTML =
+                    `<strong>${num(total)} requests</strong> · ${s.requestsPerSec.toFixed(1)} req/s · ` +
+                    `${pct(s.successRate)} success · p50 ${ms(p.p50)} · p95 ${ms(p.p95)} · p99 ${ms(p.p99)}`;
+
+                // Also update the matching target card if it's on the page.
+                const card = document.querySelector(`.target-card[data-target-id="${targetId}"]`);
+                if (card) { fillPanel(card, result); }
+            } catch (err) {
+                if (err.cancelled || err.name === 'AbortError') {
+                    runResult.className = 'run-result running';
+                    runResult.textContent = 'Run cancelled.';
+                } else {
+                    runResult.className = 'run-result error';
+                    runResult.textContent = 'Failed: ' + err.message;
+                }
+            } finally {
+                launchBtn.removeEventListener('click', onCancel);
+                label.textContent = originalLabel;
+            }
+        });
+    }
+})();
+/*]]>*/
+</script>
+</body>
+</html>

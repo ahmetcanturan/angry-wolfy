@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${configId} != null ? 'Edit environment' : 'New environment'">Config form</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #1a2740;
+            padding: 32px;
+        }
+        .panel {
+            max-width: 640px;
+            margin: 0 auto;
+            border: 1.5px dashed #cdd8e6;
+            border-radius: 14px;
+            padding: 22px;
+            background: #fbfcfe;
+        }
+        .panel h1 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #12233f;
+            margin: 0 0 18px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        label.field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        label.field span.label-text {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        input[type=text] {
+            border: 1px solid #dbe3ee;
+            border-radius: 9px;
+            padding: 9px 11px;
+            font-size: 13px;
+            color: #1a2740;
+            outline: none;
+            font-family: inherit;
+            width: 100%;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .error {
+            color: #c0392b;
+            font-size: 12px;
+            margin-top: 3px;
+            display: block;
+        }
+        .section {
+            margin-top: 16px;
+        }
+        .section > .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        .type-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 8px;
+        }
+        .type-pill {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .type-pill input[type=radio] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .type-pill span.pill-label {
+            display: inline-block;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            padding: 6px 11px;
+            border-radius: 8px;
+            border: 1.5px solid #e6ebf2;
+            background: #fff;
+            color: #93a1b5;
+            text-transform: uppercase;
+        }
+        .type-pill input[type=radio]:checked + span.pill-label {
+            border: 1.5px solid var(--pill-fg, #93a1b5);
+            background: var(--pill-bg, #fff);
+            color: var(--pill-fg, #93a1b5);
+        }
+        .headers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .header-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .header-row input[type=text] {
+            flex: 1;
+        }
+        .header-row input.value-input {
+            flex: 1.4;
+        }
+        .remove-btn {
+            background: #f0f3f8;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            color: #93a1b5;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        .add-header-btn {
+            align-self: flex-start;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #5e82ad;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        .actions {
+            margin-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-cancel {
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            color: #3d5580;
+            background: #eef2f8;
+            border: 1px solid #e0e7f1;
+            padding: 11px 18px;
+            border-radius: 11px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-save {
+            background: #0e2340;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 11px 22px;
+            border-radius: 11px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel">
+    <h1 th:text="${configId} != null ? 'Edit environment' : 'New environment'">New environment</h1>
+
+    <form th:action="${configId != null ? '/configs/' + configId : '/projects/' + projectId + '/configs'}"
+          th:object="${configForm}" method="post">
+
+        <div class="row">
+            <label class="field">
+                <span class="label-text">Name</span>
+                <input type="text" th:field="*{name}" placeholder="e.g. QA"/>
+                <span class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</span>
+            </label>
+            <label class="field">
+                <span class="label-text">Base URL</span>
+                <input type="text" class="mono" th:field="*{baseUrl}" placeholder="https://…"/>
+                <span class="error" th:if="${#fields.hasErrors('baseUrl')}" th:errors="*{baseUrl}">Base URL error</span>
+            </label>
+        </div>
+
+        <div class="section">
+            <span class="section-label">Type</span>
+            <div class="type-options">
+                <label class="type-pill"
+                       th:each="ct : ${T(com.buddywolfy.angrywolfy.enums.ConfigType).values()}"
+                       th:style="${
+                           ct.name() == 'LOCAL' ? '--pill-bg:#eef1f6;--pill-fg:#586274' :
+                           (ct.name() == 'DEVELOPMENT' ? '--pill-bg:#e4eefb;--pill-fg:#1e5bb8' :
+                           (ct.name() == 'STAGING' ? '--pill-bg:#fdf1dd;--pill-fg:#a6710a' :
+                           (ct.name() == 'PREPRODUCTION' ? '--pill-bg:#efe8fb;--pill-fg:#6b3fc0' :
+                           (ct.name() == 'PRODUCTION' ? '--pill-bg:#fde8e8;--pill-fg:#c0392b' :
+                           '--pill-bg:#eef1f6;--pill-fg:#586274'))))}">
+                    <input type="radio" th:field="*{type}" th:value="${ct}"/>
+                    <span class="pill-label" th:text="${ct}">TYPE</span>
+                </label>
+            </div>
+            <span class="error" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">Type error</span>
+        </div>
+
+        <div class="section">
+            <span class="section-label">Headers</span>
+            <div class="headers-list">
+                <div class="header-row" th:each="entry, iStat : *{headers}">
+                    <input type="text" th:field="*{headers[__${iStat.index}__].key}" placeholder="Header"/>
+                    <input type="text" class="value-input mono" th:field="*{headers[__${iStat.index}__].value}" placeholder="Value"/>
+                    <button type="submit" class="remove-btn"
+                            th:formaction="${configId != null
+                                ? '/configs/' + configId + '/headers/' + iStat.index + '/remove'
+                                : '/projects/' + projectId + '/configs/new/headers/' + iStat.index + '/remove'}"
+                            formmethod="post">&#10005;</button>
+                </div>
+                <button type="submit" class="add-header-btn"
+                        th:formaction="${configId != null
+                            ? '/configs/' + configId + '/headers/add'
+                            : '/projects/' + projectId + '/configs/new/headers/add'}"
+                        formmethod="post">&#65291; Add header</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a class="btn-cancel" th:href="@{/projects/{projectId}(projectId=${projectId})}">Cancel</a>
+            <button type="submit" class="btn-save">Save</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

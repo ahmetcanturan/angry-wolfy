@@ -1,5 +1,7 @@
 package com.buddywolfy.angrywolfy.web.rest;
 
+import com.buddywolfy.angrywolfy.service.OhaCancelledException;
+import com.buddywolfy.angrywolfy.service.OhaExecutionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,5 +34,23 @@ public class RestExceptionHandler {
                 .collect(Collectors.joining(", "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of(HttpStatus.BAD_REQUEST, message));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler(OhaExecutionException.class)
+    public ResponseEntity<ApiError> handleOhaFailure(OhaExecutionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiError.of(HttpStatus.BAD_GATEWAY, ex.getMessage()));
+    }
+
+    @ExceptionHandler(OhaCancelledException.class)
+    public ResponseEntity<ApiError> handleCancelled(OhaCancelledException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiError.of(HttpStatus.CONFLICT, ex.getMessage()));
     }
 }

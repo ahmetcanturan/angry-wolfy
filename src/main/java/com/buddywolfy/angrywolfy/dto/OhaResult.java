@@ -2,6 +2,7 @@ package com.buddywolfy.angrywolfy.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -11,11 +12,18 @@ import java.util.Map;
  * and the same object serializes back to the client unchanged. Unknown/rarely
  * used sections are ignored rather than mapped, so an oha upgrade that adds
  * fields won't break deserialization.
+ *
+ * <p>{@code responseTimeHistogram} and {@code firstBytePercentiles} are the
+ * richest signals oha emits — the latency *shape* and the tail — so they are
+ * mapped here to drive the dashboard charts. Histograms preserve oha's bucket
+ * order via {@link LinkedHashMap}.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record OhaResult(
         Summary summary,
         Percentiles latencyPercentiles,
+        LinkedHashMap<String, Integer> responseTimeHistogram,
+        Percentiles firstBytePercentiles,
         Map<String, Integer> statusCodeDistribution,
         Map<String, Integer> errorDistribution) {
 

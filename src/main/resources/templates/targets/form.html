@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${targetId} != null ? 'Edit target' : 'New target'">Target form</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1a2740;
+        }
+        input, textarea, select { font-family: inherit; }
+
+        .wf-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f7f9fc;
+        }
+        .wf-header {
+            height: 60px;
+            flex-shrink: 0;
+            background: #0e2340;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+        }
+        .wf-header .brand {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -.01em;
+        }
+        .wf-main {
+            flex: 1;
+            max-width: 720px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 32px 60px;
+        }
+        .wf-crumb {
+            font-size: 12px;
+            color: #93a1b5;
+            font-weight: 600;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .wf-crumb a { color: #93a1b5; text-decoration: none; }
+        .wf-crumb a:hover { color: #5e82ad; }
+        .wf-crumb .sep { opacity: .5; }
+        .wf-crumb .current { color: #5e82ad; }
+
+        h1.wf-title {
+            margin: 0 0 22px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #12233f;
+            letter-spacing: -.02em;
+        }
+
+        .wf-card {
+            background: #fff;
+            border: 1px solid #e6ebf2;
+            border-radius: 15px;
+            box-shadow: 0 1px 2px rgba(14, 35, 64, .04);
+            padding: 26px;
+        }
+
+        .wf-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+        .wf-field label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: .01em;
+        }
+        .wf-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .wf-input, .wf-textarea {
+            border: 1px solid #dbe3ee;
+            border-radius: 9px;
+            padding: 10px 12px;
+            font-size: 13.5px;
+            color: #1a2740;
+            outline: none;
+            width: 100%;
+            background: #fff;
+        }
+        .wf-input:focus, .wf-textarea:focus {
+            border-color: #6a8cb5;
+            box-shadow: 0 0 0 3px rgba(106, 140, 181, .15);
+        }
+        .wf-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .wf-textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+        .wf-error {
+            font-size: 12px;
+            font-weight: 600;
+            color: #c0392b;
+        }
+
+        .wf-pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .wf-pill-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .wf-pill {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            padding: 7px 13px;
+            border-radius: 8px;
+            border: 1.5px solid #e6ebf2;
+            background: #fff;
+            color: #93a1b5;
+            font-family: 'JetBrains Mono', monospace;
+            transition: box-shadow .12s ease;
+        }
+        .wf-pill-group input[type="radio"]:checked + .wf-pill {
+            border-color: var(--pill-fg, #5e82ad);
+            background: var(--pill-bg, #eef1f6);
+            color: var(--pill-fg, #586274);
+        }
+        .wf-pill-group input[type="radio"]:focus-visible + .wf-pill {
+            box-shadow: 0 0 0 3px rgba(106, 140, 181, .3);
+        }
+
+        .wf-pill.wf-type-pill {
+            font-family: inherit;
+            text-transform: uppercase;
+            font-size: 9.5px;
+        }
+        .wf-pill-group input[type="radio"]:checked + .wf-type-pill {
+            border-color: #5e82ad;
+            background: #f3f6fb;
+            color: #5e82ad;
+        }
+
+        .wf-headers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .wf-header-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .wf-header-row .wf-input {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+        }
+        .wf-header-key { flex: 1; }
+        .wf-header-value { flex: 1.4; }
+        .wf-remove-btn {
+            flex-shrink: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #f0f3f8;
+            border: none;
+            color: #93a1b5;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .wf-remove-btn:hover { color: #c0392b; }
+        .wf-add-header-btn {
+            align-self: flex-start;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #5e82ad;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 0;
+        }
+        .wf-no-headers {
+            font-size: 12.5px;
+            color: #93a1b5;
+            padding: 4px 0 2px;
+        }
+
+        .wf-section-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: .01em;
+            margin-bottom: 10px;
+        }
+        .wf-section {
+            margin-bottom: 22px;
+        }
+        .wf-divider {
+            border: none;
+            border-top: 1px solid #eef2f7;
+            margin: 24px 0;
+        }
+
+        .wf-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 26px;
+        }
+        .wf-btn-primary {
+            background: #0e2340;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 11px 22px;
+            border-radius: 11px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px -8px rgba(14, 35, 64, .6);
+        }
+        .wf-btn-secondary {
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            color: #3d5580;
+            background: #eef2f8;
+            border: 1px solid #e0e7f1;
+            padding: 11px 18px;
+            border-radius: 11px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+<div class="wf-shell">
+    <header class="wf-header">
+        <span class="brand">Angrywolfy</span>
+    </header>
+
+    <main class="wf-main">
+        <div class="wf-crumb">
+            <a th:href="@{/projects}">Projects</a>
+            <span class="sep">/</span>
+            <a th:href="@{/projects/{id}(id=${projectId})}">Project</a>
+            <span class="sep">/</span>
+            <span class="current" th:text="${targetId} != null ? 'Edit target' : 'New target'">Target</span>
+        </div>
+
+        <h1 class="wf-title" th:text="${targetId} != null ? 'Edit target' : 'New target'">Target form</h1>
+
+        <div class="wf-card">
+            <form th:action="${targetId != null ? '/targets/' + targetId : '/projects/' + projectId + '/targets'}"
+                  th:object="${targetForm}" method="post">
+
+                <div class="wf-field">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" class="wf-input" th:field="*{name}" placeholder="e.g. Create Payment"/>
+                    <span class="wf-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</span>
+                </div>
+
+                <div class="wf-field">
+                    <label for="description">Description</label>
+                    <textarea id="description" class="wf-textarea" th:field="*{description}" placeholder="Optional description"></textarea>
+                    <span class="wf-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Description error</span>
+                </div>
+
+                <div class="wf-field">
+                    <label for="path">Path</label>
+                    <input type="text" id="path" class="wf-input wf-mono" th:field="*{path}" placeholder="/v1/payments"/>
+                    <span class="wf-error" th:if="${#fields.hasErrors('path')}" th:errors="*{path}">Path error</span>
+                </div>
+
+                <div class="wf-row">
+                    <div class="wf-field">
+                        <label>Method</label>
+                        <div class="wf-pill-group">
+                            <span th:each="m : ${T(com.buddywolfy.angrywolfy.enums.HttpMethod).values()}"
+                                  style="position: relative; display: inline-flex;"
+                                  th:with="pillColors=${
+                                      m.name() == 'GET' ? '#e3f4ea|#1f8a4c' :
+                                      (m.name() == 'POST' ? '#e4eefb|#1e5bb8' :
+                                      (m.name() == 'PUT' ? '#fdf1dd|#a6710a' :
+                                      (m.name() == 'PATCH' ? '#dff4f3|#0f8a80' :
+                                      (m.name() == 'DELETE' ? '#fde8e8|#c0392b' : '#eef1f6|#586274'))))
+                                  }">
+                                <input type="radio" th:field="*{method}" th:value="${m}"
+                                       th:id="${'method-' + m.name()}"/>
+                                <label class="wf-pill" th:for="${'method-' + m.name()}"
+                                       th:text="${m.name()}"
+                                       th:style="'--pill-bg:' + ${#strings.substringBefore(pillColors,'|')} + ';--pill-fg:' + ${#strings.substringAfter(pillColors,'|')} + ';'">GET</label>
+                            </span>
+                        </div>
+                        <span class="wf-error" th:if="${#fields.hasErrors('method')}" th:errors="*{method}">Method error</span>
+                    </div>
+
+                    <div class="wf-field">
+                        <label>Type</label>
+                        <div class="wf-pill-group">
+                            <span th:each="ty : ${T(com.buddywolfy.angrywolfy.enums.TargetType).values()}"
+                                  style="position: relative; display: inline-flex;">
+                                <input type="radio" th:field="*{type}" th:value="${ty}"
+                                       th:id="${'type-' + ty.name()}"/>
+                                <label class="wf-pill wf-type-pill" th:for="${'type-' + ty.name()}"
+                                       th:text="${ty.name()}">REST</label>
+                            </span>
+                        </div>
+                        <span class="wf-error" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">Type error</span>
+                    </div>
+                </div>
+
+                <hr class="wf-divider"/>
+
+                <div class="wf-section">
+                    <div class="wf-section-label">Headers</div>
+                    <div class="wf-headers-list">
+                        <p class="wf-no-headers" th:if="${#lists.isEmpty(targetForm.headers)}">No headers yet.</p>
+                        <div class="wf-header-row" th:each="header, iStat : *{headers}">
+                            <input type="text" class="wf-input wf-header-key"
+                                   th:field="*{headers[__${iStat.index}__].key}" placeholder="Header"/>
+                            <input type="text" class="wf-input wf-header-value"
+                                   th:field="*{headers[__${iStat.index}__].value}" placeholder="Value"/>
+                            <button type="submit" class="wf-remove-btn"
+                                    th:formaction="${targetId != null
+                                        ? '/targets/' + targetId + '/headers/' + iStat.index + '/remove'
+                                        : '/projects/' + projectId + '/targets/new/headers/' + iStat.index + '/remove'}"
+                                    formmethod="post">✕</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="wf-add-header-btn"
+                            th:formaction="${targetId != null
+                                ? '/targets/' + targetId + '/headers/add'
+                                : '/projects/' + projectId + '/targets/new/headers/add'}"
+                            formmethod="post">＋ Add header</button>
+                </div>
+
+                <hr class="wf-divider"/>
+
+                <div class="wf-field">
+                    <label for="body">Body</label>
+                    <textarea id="body" class="wf-textarea wf-mono" th:field="*{body}" placeholder="Optional request body"></textarea>
+                    <span class="wf-error" th:if="${#fields.hasErrors('body')}" th:errors="*{body}">Body error</span>
+                </div>
+
+                <div class="wf-row">
+                    <div class="wf-field">
+                        <label for="rps">Target RPS</label>
+                        <input type="number" id="rps" class="wf-input wf-mono" th:field="*{rps}"
+                               step="any" min="0.01" placeholder="e.g. 60"/>
+                        <span class="wf-error" th:if="${#fields.hasErrors('rps')}" th:errors="*{rps}">Rps error</span>
+                    </div>
+
+                    <div class="wf-field">
+                        <label for="notes">Notes</label>
+                        <input type="text" id="notes" class="wf-input" th:field="*{notes}" placeholder="Optional notes"/>
+                        <span class="wf-error" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}">Notes error</span>
+                    </div>
+                </div>
+
+                <div class="wf-actions">
+                    <a class="wf-btn-secondary" th:href="@{/projects/{id}(id=${projectId})}">Cancel</a>
+                    <button type="submit" class="wf-btn-primary">Save target</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>
