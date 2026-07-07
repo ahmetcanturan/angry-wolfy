@@ -4,6 +4,7 @@ import com.buddywolfy.angrywolfy.dto.OhaOptions;
 import com.buddywolfy.angrywolfy.dto.OhaResult;
 import com.buddywolfy.angrywolfy.entity.Config;
 import com.buddywolfy.angrywolfy.entity.Target;
+import com.buddywolfy.angrywolfy.service.ChartService;
 import com.buddywolfy.angrywolfy.service.ConfigService;
 import com.buddywolfy.angrywolfy.service.OhaRunRegistry;
 import com.buddywolfy.angrywolfy.service.OhaRunner;
@@ -41,15 +42,18 @@ public class LoadTestController {
     private final ConfigService configService;
     private final OhaRunner ohaRunner;
     private final OhaRunRegistry runRegistry;
+    private final ChartService chartService;
 
     public LoadTestController(TargetService targetService,
                               ConfigService configService,
                               OhaRunner ohaRunner,
-                              OhaRunRegistry runRegistry) {
+                              OhaRunRegistry runRegistry,
+                              ChartService chartService) {
         this.targetService = targetService;
         this.configService = configService;
         this.ohaRunner = ohaRunner;
         this.runRegistry = runRegistry;
+        this.chartService = chartService;
     }
 
     /**
@@ -73,7 +77,10 @@ public class LoadTestController {
 
         String id = (runId != null && !runId.isBlank()) ? runId : UUID.randomUUID().toString();
         OhaOptions effective = options != null ? options : new OhaOptions(null, null, null, null, null);
+        // A cancelled/failed run throws before reaching here, so only successful
+        // results are persisted (capped at 50 per target).
         OhaResult result = ohaRunner.run(id, target, config, effective);
+        chartService.save(target, config, result);
         return ResponseEntity.ok().header(RUN_ID_HEADER, id).body(result);
     }
 

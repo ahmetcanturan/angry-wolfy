@@ -339,6 +339,24 @@
         .bd-count { font-size: 13px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
         .bd-empty { font-size: 12.5px; color: #93a1b5; font-style: italic; padding: 4px 2px; }
 
+        /* run history list */
+        .dash-history .js-history-count { color: #b8c4d6; font-weight: 600; }
+        .history-list {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-top: 4px;
+        }
+        .hist-item {
+            flex-shrink: 0; min-width: 150px; text-align: left; cursor: pointer;
+            background: #fff; border: 1.5px solid #e6ebf2; border-radius: 11px; padding: 10px 12px;
+            font-family: inherit; transition: border-color .12s ease, box-shadow .12s ease;
+        }
+        .hist-item:hover { border-color: #b9cbe2; }
+        .hist-item.active { border-color: #5e82ad; box-shadow: 0 0 0 3px rgba(94,130,173,.15); }
+        .hist-when { font-size: 11px; color: #93a1b5; font-weight: 600; }
+        .hist-main { font-size: 15px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; margin: 3px 0; }
+        .hist-main small { font-size: 10px; color: #93a1b5; font-weight: 600; letter-spacing: .03em; }
+        .hist-sub { font-size: 11px; color: #7c8aa0; font-family: 'JetBrains Mono', monospace; display: flex; gap: 8px; }
+        .hist-sub .ok { color: #1f8a4c; } .hist-sub .bad { color: #c0392b; }
+
         @media (max-width: 820px) {
             .dash-hero { grid-template-columns: 1fr; }
             .dash-charts { grid-template-columns: 1fr; }
@@ -610,6 +628,12 @@
 
                         <!-- results dashboard (revealed after a run) -->
                         <div class="dash-body js-dash-body" hidden>
+                            <!-- run history (last 50); newest auto-loaded below -->
+                            <div class="dash-history js-history-wrap" hidden>
+                                <div class="stats-heading">Run history <span class="js-history-count"></span></div>
+                                <div class="history-list js-history"></div>
+                            </div>
+
                             <!-- headline: hero throughput + key numbers -->
                             <div class="dash-hero">
                                 <div class="hero-rps">
@@ -922,7 +946,7 @@
     }
 
     // Fill a target card's dashboard from an OhaResult ------------------
-    function fillPanel(card, result) {
+    function fillPanel(card, result, openPanel = true) {
         const s = result.summary;
         const p = result.latencyPercentiles;
         const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
@@ -948,8 +972,77 @@
 
         card.querySelector('.js-dash-empty').hidden = true;
         card.querySelector('.js-dash-body').hidden = false;
-        card.querySelector('.js-stats-panel').open = true;
+        if (openPanel) { card.querySelector('.js-stats-panel').open = true; }
     }
+
+    // ---- run history --------------------------------------------------
+    // Short relative time so history rows stay compact.
+    function relTime(iso) {
+        const then = new Date(iso).getTime();
+        const secs = Math.max(0, Math.round((Date.now() - then) / 1000));
+        if (secs < 60) return secs + 's ago';
+        if (secs < 3600) return Math.round(secs / 60) + 'm ago';
+        if (secs < 86400) return Math.round(secs / 3600) + 'h ago';
+        return Math.round(secs / 86400) + 'd ago';
+    }
+
+    // Render the clickable history strip from the list endpoint's summaries.
+    function renderHistory(card, list) {
+        const wrap = card.querySelector('.js-history-wrap');
+        if (!list.length) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        card.querySelector('.js-history-count').textContent = `(${list.length})`;
+        card.querySelector('.js-history').innerHTML = list.map((r) => {
+            const ok = r.successRate >= 1 ? 'ok' : 'bad';
+            return `<button type="button" class="hist-item" data-chart-id="${r.id}">
+                        <div class="hist-when">${relTime(r.createdAt)} · ${r.configName}</div>
+                        <div class="hist-main">${r.requestsPerSec.toFixed(0)} <small>REQ/S</small></div>
+                        <div class="hist-sub"><span>p95 ${r.p95Ms.toFixed(0)}ms</span>
+                            <span class="${ok}">${pct(r.successRate)}</span></div>
+                    </button>`;
+        }).join('');
+    }
+
+    // Fetch one stored run's full result and render its dashboard.
+    async function loadChart(card, chartId) {
+        const res = await fetch(`/api/charts/${chartId}`);
+        if (!res.ok) return;
+        const result = await res.json();
+        fillPanel(card, result, false);
+        markActiveHistory(card, chartId);
+    }
+
+    function markActiveHistory(card, chartId) {
+        card.querySelectorAll('.hist-item').forEach((b) =>
+            b.classList.toggle('active', b.getAttribute('data-chart-id') === String(chartId)));
+    }
+
+    // On load, pull each target's history; render the list and auto-load the newest.
+    async function loadHistory(card) {
+        const targetId = card.getAttribute('data-target-id');
+        try {
+            const res = await fetch(`/api/targets/${targetId}/charts`);
+            if (!res.ok) return;
+            const list = await res.json();
+            renderHistory(card, list);
+            if (list.length) {
+                card.querySelector('.js-dash-empty').hidden = true;
+                card.querySelector('.js-dash-body').hidden = false;
+                await loadChart(card, list[0].id);   // newest = first
+            }
+        } catch (e) { /* leave empty state on failure */ }
+    }
+
+    // Clicking a history item reloads that run's dashboard.
+    document.querySelectorAll('.target-card').forEach((card) => {
+        card.querySelector('.js-history').addEventListener('click', (e) => {
+            const item = e.target.closest('.hist-item');
+            if (item) { loadChart(card, item.getAttribute('data-chart-id')); }
+        });
+    });
+
+    // Populate history for every target card as the page loads.
+    document.querySelectorAll('.target-card').forEach((card) => loadHistory(card));
 
     // Configure toggle: show/hide the per-card run-config panel.
     document.querySelectorAll('.js-config-toggle').forEach((btn) => {
@@ -1025,6 +1118,7 @@
             try {
                 const result = await runLoadTest(targetId, readOptions(card), runId, controller.signal);
                 fillPanel(card, result);
+                loadHistory(card);   // a successful run was persisted — refresh the strip
             } catch (err) {
                 const msg = (err.cancelled || err.name === 'AbortError')
                     ? 'Run cancelled.' : 'Failed: ' + err.message;
@@ -1080,7 +1174,7 @@
 
                 // Also update the matching target card if it's on the page.
                 const card = document.querySelector(`.target-card[data-target-id="${targetId}"]`);
-                if (card) { fillPanel(card, result); }
+                if (card) { fillPanel(card, result); loadHistory(card); }
             } catch (err) {
                 if (err.cancelled || err.name === 'AbortError') {
                     runResult.className = 'run-result running';
