@@ -45,3 +45,5 @@ data/*.db-wal
 ### Logs ###
 *.log
 logs/
+
+.DS_Store
