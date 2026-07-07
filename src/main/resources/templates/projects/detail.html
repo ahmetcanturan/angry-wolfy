@@ -188,9 +188,6 @@
         }
         .target-path .prefix { color: #c2ccdb; }
         .target-row-right { display: flex; align-items: center; gap: 18px; flex-shrink: 0; flex-wrap: wrap; }
-        .rps-block { text-align: right; }
-        .rps-value { font-size: 15px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
-        .rps-label { font-size: 10.5px; color: #93a1b5; font-weight: 600; letter-spacing: .03em; }
         .row-actions { display: flex; gap: 8px; align-items: center; }
         .btn-small {
             font-family: inherit; font-size: 13px; font-weight: 700; color: #3d5580; background: #eef2f8;
@@ -331,6 +328,29 @@
         .dash-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
         .dash-outcome { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: stretch; }
         .chart-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; padding: 16px 18px; }
+        .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+        .chart-head .stats-heading { margin-bottom: 0; }
+        .png-btn {
+            font-family: inherit; font-size: 11px; font-weight: 700; color: #5e82ad;
+            background: #eef2f8; border: 1px solid #e0e7f1; padding: 4px 9px; border-radius: 7px; cursor: pointer;
+            white-space: nowrap;
+        }
+        .png-btn:hover { background: #dbe4f1; color: #1e3a63; }
+
+        /* export bar */
+        .dash-export {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding-bottom: 4px; border-bottom: 1px solid #eef2f7; margin-bottom: 4px;
+        }
+        .export-label {
+            font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+            color: #93a1b5; margin-right: 2px;
+        }
+        .export-btn {
+            font-family: inherit; font-size: 12.5px; font-weight: 700; color: #3d5580;
+            background: #fff; border: 1px solid #dbe3ee; padding: 6px 13px; border-radius: 8px; cursor: pointer;
+        }
+        .export-btn:hover { background: #eef2f8; border-color: #b9cbe2; }
         .chart-box { height: 210px; position: relative; }
         .donut-box { height: 190px; position: relative; display: flex; align-items: center; justify-content: center; }
         .chart-sub { font-size: 11.5px; color: #93a1b5; margin-top: 10px; line-height: 1.4; }
@@ -564,15 +584,13 @@
                         </div>
                     </div>
                     <div class="target-row-right">
-                        <div class="rps-block">
-                            <div class="rps-value" th:text="${t.rps != null ? t.rps : '—'}">200</div>
-                            <div class="rps-label">TARGET RPS</div>
-                        </div>
                         <div class="row-actions">
                             <button type="button" class="btn-config js-config-toggle"
                                     title="Configure run" aria-label="Configure run">⚙</button>
                             <button type="button" class="btn-run js-run-target"
-                                    th:attr="data-target-id=${t.id}, data-target-name=${t.name}">
+                                    th:attr="data-target-id=${t.id}, data-target-name=${t.name},
+                                             data-target-method=${t.method}, data-target-path=${t.path},
+                                             data-target-url=${(activeConfig != null ? activeConfig.baseUrl : '') + t.path}">
                                 <span class="play"></span>Run
                             </button>
                         </div>
@@ -636,6 +654,14 @@
                                 <div class="history-list js-history"></div>
                             </div>
 
+                            <!-- export bar -->
+                            <div class="dash-export">
+                                <span class="export-label">Export</span>
+                                <button type="button" class="export-btn js-export" data-fmt="json">JSON</button>
+                                <button type="button" class="export-btn js-export" data-fmt="csv">CSV</button>
+                                <button type="button" class="export-btn js-export" data-fmt="md">Markdown</button>
+                            </div>
+
                             <!-- headline: hero throughput + key numbers -->
                             <div class="dash-hero">
                                 <div class="hero-rps">
@@ -665,12 +691,20 @@
                             <!-- two main charts side by side -->
                             <div class="dash-charts">
                                 <div class="chart-card">
-                                    <div class="stats-heading">Response-time distribution</div>
+                                    <div class="chart-head">
+                                        <div class="stats-heading">Response-time distribution</div>
+                                        <button type="button" class="png-btn js-export-png" data-canvas="js-histogram"
+                                                data-name="histogram" title="Export chart as PNG">⤓ PNG</button>
+                                    </div>
                                     <div class="chart-box"><canvas class="js-histogram"></canvas></div>
                                     <div class="chart-sub">How many requests fell in each latency bucket — a long right tail means slow outliers.</div>
                                 </div>
                                 <div class="chart-card">
-                                    <div class="stats-heading">Latency percentiles</div>
+                                    <div class="chart-head">
+                                        <div class="stats-heading">Latency percentiles</div>
+                                        <button type="button" class="png-btn js-export-png" data-canvas="js-percentiles"
+                                                data-name="percentiles" title="Export chart as PNG">⤓ PNG</button>
+                                    </div>
                                     <div class="chart-box"><canvas class="js-percentiles"></canvas></div>
                                     <div class="chart-sub">A sharp climb after p95 means your tail latency is the risk.</div>
                                 </div>
@@ -679,7 +713,11 @@
                             <!-- outcome: success/error donut + status & error breakdown -->
                             <div class="dash-outcome">
                                 <div class="chart-card donut-card">
-                                    <div class="stats-heading">Outcome</div>
+                                    <div class="chart-head">
+                                        <div class="stats-heading">Outcome</div>
+                                        <button type="button" class="png-btn js-export-png" data-canvas="js-donut"
+                                                data-name="outcome" title="Export chart as PNG">⤓ PNG</button>
+                                    </div>
                                     <div class="donut-box"><canvas class="js-donut"></canvas></div>
                                 </div>
                                 <div class="chart-card breakdown-card">
@@ -981,10 +1019,138 @@
         drawDonut(card, success, failed);
         renderBreakdown(card, result);
 
+        // Stash the rendered result so the export buttons have data to work with.
+        card._result = result;
+
         card.querySelector('.js-dash-empty').hidden = true;
         card.querySelector('.js-dash-body').hidden = false;
         if (openPanel) { card.querySelector('.js-stats-panel').open = true; card.classList.add('open'); }
     }
+
+    // ---- export ---------------------------------------------------------
+    // A filesystem-safe base name from the target: "create-payment".
+    function exportName(card) {
+        const name = targetMeta(card).name;
+        return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'target';
+    }
+
+    // Endpoint + method info for the exported target.
+    function targetMeta(card) {
+        const btn = card.querySelector('.js-run-target');
+        return {
+            name: (btn && btn.getAttribute('data-target-name')) || 'target',
+            method: (btn && btn.getAttribute('data-target-method')) || '',
+            path: (btn && btn.getAttribute('data-target-path')) || '',
+            url: (btn && btn.getAttribute('data-target-url')) || ''
+        };
+    }
+
+    // Trigger a browser download for text content or an existing object/data URL.
+    function download(filename, content, mime) {
+        const url = mime ? URL.createObjectURL(new Blob([content], { type: mime })) : content;
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        if (mime) { setTimeout(() => URL.revokeObjectURL(url), 0); }
+    }
+
+    function totalOf(result) {
+        return Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
+    }
+
+    // JSON — the OhaResult plus the endpoint/method it was run against.
+    function exportJson(card) {
+        const m = targetMeta(card);
+        const payload = {
+            target: { name: m.name, method: m.method, path: m.path, url: m.url },
+            result: card._result
+        };
+        download(exportName(card) + '-result.json',
+            JSON.stringify(payload, null, 2), 'application/json');
+    }
+
+    // CSV — flattened headline metrics + per-status-code rows.
+    function exportCsv(card) {
+        const r = card._result, s = r.summary, p = r.latencyPercentiles, m = targetMeta(card);
+        const rows = [['metric', 'value']];
+        rows.push(['target', m.name]);
+        rows.push(['method', m.method]);
+        rows.push(['path', m.path]);
+        rows.push(['url', m.url]);
+        rows.push(['requests_per_sec', s.requestsPerSec.toFixed(2)]);
+        rows.push(['total_requests', totalOf(r)]);
+        rows.push(['success_rate', s.successRate]);
+        rows.push(['avg_ms', (s.average * 1000).toFixed(2)]);
+        rows.push(['slowest_ms', (s.slowest * 1000).toFixed(2)]);
+        rows.push(['fastest_ms', (s.fastest * 1000).toFixed(2)]);
+        ['p50', 'p90', 'p95', 'p99'].forEach((k) => rows.push([k + '_ms', (p[k] * 1000).toFixed(2)]));
+        rows.push(['total_data_bytes', s.totalData]);
+        Object.entries(r.statusCodeDistribution || {}).forEach(([code, n]) => rows.push(['status_' + code, n]));
+        Object.entries(r.errorDistribution || {}).forEach(([msg, n]) => rows.push(['error: ' + msg, n]));
+        const csv = rows.map((row) => row.map((c) => {
+            const v = String(c);
+            return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        }).join(',')).join('\n');
+        download(exportName(card) + '-result.csv', csv, 'text/csv');
+    }
+
+    // Markdown — a paste-ready summary table.
+    function exportMarkdown(card) {
+        const r = card._result, s = r.summary, p = r.latencyPercentiles, m = targetMeta(card);
+        const codes = Object.entries(r.statusCodeDistribution || {}).map(([c, n]) => `${c}: ${n}`).join(', ') || '—';
+        const endpoint = m.url || m.path || '—';
+        const md = [
+            `# Load test — ${m.name}`,
+            '',
+            `**Endpoint:** \`${m.method} ${endpoint}\``,
+            '',
+            '| Metric | Value |',
+            '| --- | --- |',
+            `| Throughput | ${s.requestsPerSec.toFixed(1)} req/s |`,
+            `| Total requests | ${num(totalOf(r))} |`,
+            `| Success rate | ${pct(s.successRate)} |`,
+            `| Avg latency | ${ms(s.average)} |`,
+            `| p50 / p95 / p99 | ${ms(p.p50)} / ${ms(p.p95)} / ${ms(p.p99)} |`,
+            `| Slowest | ${ms(s.slowest)} |`,
+            `| Data transferred | ${bytes(s.totalData)} |`,
+            `| Status codes | ${codes} |`,
+            ''
+        ].join('\n');
+        download(exportName(card) + '-result.md', md, 'text/markdown');
+    }
+
+    // PNG — one chart's canvas, flattened onto a white background.
+    function exportChartPng(card, canvasClass, chartName) {
+        const canvas = card.querySelector('.' + canvasClass);
+        if (!canvas) { return; }
+        // Chart.js canvases are transparent; composite onto white so the PNG isn't see-through.
+        const out = document.createElement('canvas');
+        out.width = canvas.width; out.height = canvas.height;
+        const ctx = out.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, out.width, out.height);
+        ctx.drawImage(canvas, 0, 0);
+        download(`${exportName(card)}-${chartName}.png`, out.toDataURL('image/png'));
+    }
+
+    // Wire export controls on every card.
+    document.querySelectorAll('.target-card').forEach((card) => {
+        card.querySelectorAll('.js-export').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (!card._result) { return; }
+                const fmt = btn.getAttribute('data-fmt');
+                if (fmt === 'json') { exportJson(card); }
+                else if (fmt === 'csv') { exportCsv(card); }
+                else if (fmt === 'md') { exportMarkdown(card); }
+            });
+        });
+        card.querySelectorAll('.js-export-png').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (!card._result) { return; }
+                exportChartPng(card, btn.getAttribute('data-canvas'), btn.getAttribute('data-name'));
+            });
+        });
+    });
 
     // ---- run history --------------------------------------------------
     // Short relative time so history rows stay compact.
