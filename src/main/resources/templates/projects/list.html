@@ -2,35 +2,213 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Projects</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Projects — Angrywolfy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1a2740;
+        }
+        a { text-decoration: none; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cfd8e6; border-radius: 8px; border: 2px solid #eef2f7; }
+
+        .page { min-height: 100vh; display: flex; flex-direction: column; background: #f7f9fc; }
+
+        /* top nav — shared with detail page */
+        .topnav {
+            height: 60px; flex-shrink: 0; background: #0e2340;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
+        }
+        .topnav-left { display: flex; align-items: center; gap: 36px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 30px; height: 30px; display: block; }
+        .brand span { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+        .navlinks { display: flex; gap: 4px; }
+        .navlinks span, .navlinks a {
+            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 7px 12px;
+        }
+        .navlinks a.active {
+            font-weight: 700; color: #fff; padding: 7px 14px;
+            background: rgba(255,255,255,.1); border-radius: 9px;
+        }
+        .selfhosted {
+            display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+            color: #6a8cb5; font-family: 'JetBrains Mono', monospace;
+        }
+        .selfhosted .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #3ad07f;
+            box-shadow: 0 0 0 3px rgba(58,208,127,.2);
+        }
+
+        /* page band */
+        .band { background: #fff; border-bottom: 1px solid #e6ebf2; }
+        .band-inner { max-width: 1080px; margin: 0 auto; padding: 26px 32px; }
+        .breadcrumb {
+            font-size: 12px; color: #93a1b5; font-weight: 600;
+            display: flex; gap: 6px; align-items: center;
+        }
+        .breadcrumb .current { color: #5e82ad; }
+        .band-head { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px; gap: 16px; flex-wrap: wrap; }
+        .band-head h1 { margin: 0; font-size: 27px; font-weight: 800; color: #12233f; letter-spacing: -.02em; }
+        .band-head p.sub { margin: 5px 0 0; font-size: 14px; color: #64748b; }
+        .btn-dark {
+            display: inline-flex; align-items: center; gap: 8px; background: #0e2340; color: #fff;
+            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px 20px;
+            border-radius: 11px; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(14,35,64,.6);
+        }
+        .btn-dark:hover { background: #142c4f; }
+
+        /* content grid */
+        .content { flex: 1; max-width: 1080px; width: 100%; margin: 0 auto; padding: 26px 32px 60px; }
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+        }
+
+        /* project card */
+        .card {
+            position: relative; display: flex; flex-direction: column;
+            background: #fff; border: 1px solid #e6ebf2; border-radius: 15px;
+            box-shadow: 0 1px 2px rgba(14,35,64,.04); overflow: hidden;
+            transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+        }
+        .card:hover { border-color: #cbd8ea; box-shadow: 0 10px 26px -14px rgba(14,35,64,.35); transform: translateY(-2px); }
+        .card-link { display: flex; flex-direction: column; gap: 12px; padding: 20px 20px 16px; color: inherit; flex: 1; }
+        .card-top { display: flex; align-items: center; gap: 13px; }
+        .logo-tile {
+            width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+            background: linear-gradient(140deg,#1b355d,#0e2340);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-tile img { width: 32px; height: 32px; display: block; }
+        .card-name { font-size: 17px; font-weight: 800; color: #12233f; letter-spacing: -.01em; }
+        .card-desc { font-size: 13px; color: #64748b; line-height: 1.45; min-height: 18px; }
+        .card-desc.placeholder { font-style: italic; color: #9aa7bb; }
+        .card-repo {
+            font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #7c8aa0;
+            display: flex; align-items: center; gap: 7px;
+        }
+        .repo-ico { color: #b8c4d6; font-size: 10px; flex-shrink: 0; }
+
+        .card-foot {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            border-top: 1px solid #eef2f7; padding: 11px 20px; background: #fbfcfe;
+        }
+        .card-meta { font-size: 11.5px; color: #93a1b5; font-weight: 600; }
+        .card-actions { display: flex; gap: 6px; }
+        .icon-btn {
+            width: 28px; height: 28px; border-radius: 8px; border: none; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; text-decoration: none;
+            transition: background .12s ease, color .12s ease;
+        }
+        .icon-btn.edit { background: #e4eefb; color: #1e5bb8; }
+        .icon-btn.edit:hover { background: #cfe0f6; }
+        .icon-btn.delete { background: #fde8e8; color: #c0392b; }
+        .icon-btn.delete:hover { background: #f9d5d5; }
+
+        /* empty state */
+        .empty-state {
+            grid-column: 1 / -1;
+            padding: 40px 24px; border: 1.5px dashed #cdd8e6; border-radius: 16px; background: #fbfcfe;
+            color: #7c8aa0; font-size: 14px; text-align: center;
+        }
+        .empty-state a { color: #5e82ad; font-weight: 700; }
+    </style>
 </head>
 <body>
-<h1>Projects</h1>
+<div class="page">
 
-<a th:href="@{/projects/new}">New project</a>
+    <!-- top nav -->
+    <header class="topnav">
+        <div class="topnav-left">
+            <div class="brand">
+                <img src="/assets/wolfy.png" alt="Angrywolfy">
+                <span>Angrywolfy</span>
+            </div>
+            <nav class="navlinks">
+                <span>Overview</span>
+                <a th:href="@{/projects}" class="active">Projects</a>
+                <span>Test Runs</span>
+                <span>Reports</span>
+            </nav>
+        </div>
+        <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+    </header>
 
-<table border="1" cellpadding="6">
-    <thead>
-    <tr>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Repository path</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="project : ${projects}">
-        <td th:text="${project.name}">Name</td>
-        <td th:text="${project.description}">Description</td>
-        <td th:text="${project.repositoryPath}">Repository path</td>
-        <td>
-            <a th:href="@{/projects/{id}/edit(id=${project.id})}">Edit</a>
-            <form th:action="@{/projects/{id}/delete(id=${project.id})}" method="post" style="display:inline">
-                <button type="submit">Delete</button>
-            </form>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <!-- page band -->
+    <div class="band">
+        <div class="band-inner">
+            <div class="breadcrumb">
+                <span class="current">Projects</span>
+            </div>
+            <div class="band-head">
+                <div>
+                    <h1>Projects</h1>
+                    <p class="sub" th:text="${#lists.size(projects)} + ' project' + (${#lists.size(projects)} == 1 ? '' : 's') + ' — pick one to load-test its endpoints.'">
+                        0 projects</p>
+                </div>
+                <a th:href="@{/projects/new}" class="btn-dark">＋ New project</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- project grid -->
+    <div class="content">
+        <div class="grid">
+
+            <!-- empty state -->
+            <div class="empty-state" th:if="${#lists.isEmpty(projects)}">
+                No projects yet.
+                <a th:href="@{/projects/new}">Create your first project</a>
+                to start load-testing.
+            </div>
+
+            <!-- project cards -->
+            <div class="card" th:each="project : ${projects}">
+                <a th:href="@{/projects/{id}(id=${project.id})}" class="card-link">
+                    <div class="card-top">
+                        <div class="logo-tile"><img src="/assets/wolfy.png" alt=""></div>
+                        <div style="min-width:0;">
+                            <div class="card-name" th:text="${project.name}">Project name</div>
+                        </div>
+                    </div>
+                    <div class="card-desc"
+                         th:if="${project.description != null and !#strings.isEmpty(project.description.trim())}"
+                         th:text="${project.description}">Description</div>
+                    <div class="card-desc placeholder"
+                         th:if="${project.description == null or #strings.isEmpty(project.description.trim())}">
+                        No description yet
+                    </div>
+                    <div class="card-repo"
+                         th:if="${project.repositoryPath != null and !#strings.isEmpty(project.repositoryPath.trim())}">
+                        <span class="repo-ico" aria-hidden="true">▸</span><span th:text="${project.repositoryPath}">acme/repo</span>
+                    </div>
+                </a>
+                <div class="card-foot">
+                    <span class="card-meta"
+                          th:text="${project.createdAt != null ? 'Created ' + #temporals.format(project.createdAt, 'MMM yyyy') : ''}">
+                        Created Mar 2026</span>
+                    <div class="card-actions">
+                        <a th:href="@{/projects/{id}/edit(id=${project.id})}" class="icon-btn edit"
+                           title="Edit project" aria-label="Edit project">✎</a>
+                        <form th:action="@{/projects/{id}/delete(id=${project.id})}" method="post" style="line-height:0;"
+                              onsubmit="return confirm('Delete this project? This cannot be undone.');">
+                            <button type="submit" class="icon-btn delete" title="Delete project" aria-label="Delete project">✕</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 </body>
 </html>
