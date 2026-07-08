@@ -497,6 +497,86 @@
         .run-result.running { background: #eef2f8; color: #5e82ad; }
         .run-result.ok { background: #e9f6ef; color: #1f7a4d; border: 1px solid #cdeadb; }
         .run-result.error { background: #fdeceb; color: #c0392b; border: 1px solid #f4cfcb; }
+
+        /* ---- Import button + modal ---- */
+        .section-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-import {
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #3d5580;
+            background: #eef2f8; border: 1px solid #e0e7f1; padding: 10px 16px; border-radius: 10px; cursor: pointer;
+        }
+        .btn-import:hover { background: #e3eaf4; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 50; background: rgba(14,35,64,.45);
+            display: flex; align-items: center; justify-content: center; padding: 24px;
+            -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        }
+        .modal-overlay[hidden] { display: none; }  /* the flex display must not override the hidden attribute */
+        .modal {
+            background: #fff; border-radius: 18px; width: 100%; max-width: 560px;
+            max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 30px 70px -24px rgba(14,35,64,.6);
+        }
+        .modal-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+            padding: 22px 24px 14px;
+        }
+        .modal-head h3 { margin: 0; font-size: 18px; font-weight: 800; color: #12233f; }
+        .modal-sub { margin: 5px 0 0; font-size: 13px; color: #64748b; line-height: 1.4; }
+        .modal-close {
+            width: 30px; height: 30px; border-radius: 9px; border: none; cursor: pointer; flex-shrink: 0;
+            background: #eef2f8; color: #7c8aa0; font-size: 13px; font-weight: 700;
+        }
+        .modal-close:hover { background: #e0e7f1; color: #3d5580; }
+        .modal-body { padding: 6px 24px 8px; overflow-y: auto; }
+        .modal-foot {
+            display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+            padding: 16px 24px; border-top: 1px solid #eef2f7; background: #fbfcfe;
+        }
+
+        /* source picker */
+        .src-list { display: flex; gap: 10px; margin: 8px 0 18px; flex-wrap: wrap; }
+        .src-card {
+            display: flex; align-items: center; gap: 10px; flex: 1; min-width: 150px;
+            padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e6ebf2; background: #fff;
+            cursor: pointer; font-family: inherit; text-align: left;
+        }
+        .src-card.active { border-color: #5e82ad; box-shadow: 0 0 0 3px rgba(94,130,173,.15); }
+        .src-card.disabled { opacity: .55; cursor: not-allowed; }
+        .src-ico {
+            width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+            background: linear-gradient(140deg,#1b355d,#0e2340); color: #fff;
+        }
+        .src-meta { display: flex; flex-direction: column; min-width: 0; }
+        .src-name { font-size: 14px; font-weight: 800; color: #12233f; }
+        .src-desc { font-size: 11.5px; color: #93a1b5; font-weight: 600; }
+
+        /* drop zone + paste */
+        .drop {
+            display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+            padding: 24px 18px; border: 1.5px dashed #cdd8e6; border-radius: 14px; background: #fbfcfe;
+            cursor: pointer; transition: border-color .12s ease, background .12s ease;
+        }
+        .drop:hover, .drop.dragover { border-color: #6a8cb5; background: #f2f6fc; }
+        .drop-ico { font-size: 22px; color: #7c8aa0; }
+        .drop-text { font-size: 13px; color: #64748b; }
+        .drop-link { color: #5e82ad; font-weight: 700; text-decoration: underline; }
+        .drop-file { font-size: 12px; color: #1f7a4d; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .paste-or { text-align: center; font-size: 11.5px; color: #93a1b5; margin: 14px 0 10px; }
+        .paste-area {
+            width: 100%; min-height: 120px; resize: vertical; border: 1px solid #dbe3ee; border-radius: 11px;
+            padding: 11px 13px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1a2740;
+            outline: none; line-height: 1.5;
+        }
+        .paste-area:focus { border-color: #6a8cb5; box-shadow: 0 0 0 3px rgba(106,140,181,.15); }
+        .import-result {
+            margin-top: 14px; padding: 12px 14px; border-radius: 11px; font-size: 13px; line-height: 1.5;
+        }
+        .import-result.ok { background: #e9f6ef; color: #1f7a4d; border: 1px solid #cdeadb; }
+        .import-result.error { background: #fdeceb; color: #c0392b; border: 1px solid #f4cfcb; font-family: 'JetBrains Mono', monospace; }
+        .import-result .warn { color: #a6710a; font-size: 12px; margin-top: 6px; }
+        .btn-dark:disabled { opacity: .5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -608,7 +688,11 @@
                 <h2>Targets</h2>
                 <div class="sub">Endpoints to hit — click a row for its latest run.</div>
             </div>
-            <a th:href="@{/projects/{projectId}/targets/new(projectId=${project.id})}" class="btn-new">＋ New target</a>
+            <div class="section-actions">
+                <button type="button" class="btn-import js-import-open"
+                        th:attr="data-project-id=${project.id}" title="Import targets from a collection">⤓ Import</button>
+                <a th:href="@{/projects/{projectId}/targets/new(projectId=${project.id})}" class="btn-new">＋ New target</a>
+            </div>
         </div>
 
         <div class="empty-state" th:if="${#lists.isEmpty(targets)}">
@@ -887,6 +971,53 @@
                 </div>
             </div>
         </details>
+    </div>
+</div>
+
+<!-- Import modal (hidden until Import is clicked) -->
+<div class="modal-overlay js-import-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Import targets">
+        <div class="modal-head">
+            <div>
+                <h3>Import targets</h3>
+                <p class="modal-sub">Bring endpoints in from an existing collection — they're saved as targets in this project.</p>
+            </div>
+            <button type="button" class="modal-close js-import-close" title="Close" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+            <!-- source picker (Postman active; more can be added here) -->
+            <div class="src-list">
+                <button type="button" class="src-card active" data-source="postman">
+                    <span class="src-ico">P</span>
+                    <span class="src-meta"><span class="src-name">Postman</span><span class="src-desc">Collection v2.x</span></span>
+                </button>
+                <div class="src-card disabled" aria-disabled="true">
+                    <span class="src-ico">O</span>
+                    <span class="src-meta"><span class="src-name">OpenAPI</span><span class="src-desc">Coming soon</span></span>
+                </div>
+                <div class="src-card disabled" aria-disabled="true">
+                    <span class="src-ico">↯</span>
+                    <span class="src-meta"><span class="src-name">cURL</span><span class="src-desc">Coming soon</span></span>
+                </div>
+            </div>
+
+            <!-- Postman panel -->
+            <div class="src-panel js-src-postman">
+                <label class="drop js-drop">
+                    <input type="file" class="js-import-file" accept="application/json,.json" hidden>
+                    <span class="drop-ico">⤓</span>
+                    <span class="drop-text">Drop a <strong>collection.json</strong> here, or <span class="drop-link">browse</span></span>
+                    <span class="drop-file js-drop-file"></span>
+                </label>
+                <div class="paste-or">— or paste the collection JSON —</div>
+                <textarea class="js-import-text paste-area" placeholder='{ "info": { … }, "item": [ … ] }' spellcheck="false"></textarea>
+                <div class="import-result js-import-result" hidden></div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn-ghost js-import-close">Cancel</button>
+            <button type="button" class="btn-dark js-import-submit">Import targets</button>
+        </div>
     </div>
 </div>
 
@@ -1678,6 +1809,97 @@
             }
         });
     }
+
+    // ---- Import modal (Postman collection → targets) -------------------
+    (function importModal() {
+        const modal = document.querySelector('.js-import-modal');
+        const openBtn = document.querySelector('.js-import-open');
+        if (!modal || !openBtn) { return; }
+
+        const fileInput = modal.querySelector('.js-import-file');
+        const drop = modal.querySelector('.js-drop');
+        const dropFile = modal.querySelector('.js-drop-file');
+        const textArea = modal.querySelector('.js-import-text');
+        const resultEl = modal.querySelector('.js-import-result');
+        const submitBtn = modal.querySelector('.js-import-submit');
+        let projectId = null;
+        let fileText = null;   // contents of a chosen/dropped file, if any
+
+        function openModal() {
+            projectId = openBtn.getAttribute('data-project-id');
+            resultEl.hidden = true; resultEl.innerHTML = '';
+            modal.hidden = false;
+        }
+        function closeModal() { modal.hidden = true; }
+
+        function esc(s) {
+            return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        }
+        function showResult(cls, html) {
+            resultEl.hidden = false;
+            resultEl.className = 'import-result js-import-result ' + cls;
+            resultEl.innerHTML = html;
+        }
+
+        function setFile(file) {
+            if (!file) { return; }
+            const reader = new FileReader();
+            reader.onload = () => { fileText = reader.result; dropFile.textContent = file.name + ' loaded ✓'; };
+            reader.onerror = () => { fileText = null; dropFile.textContent = ''; };
+            reader.readAsText(file);
+        }
+
+        openBtn.addEventListener('click', openModal);
+        modal.querySelectorAll('.js-import-close').forEach((b) => b.addEventListener('click', closeModal));
+        modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(); } });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) { closeModal(); } });
+
+        fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
+        ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => {
+            e.preventDefault(); drop.classList.add('dragover');
+        }));
+        ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => {
+            e.preventDefault(); drop.classList.remove('dragover');
+        }));
+        drop.addEventListener('drop', (e) => {
+            const f = e.dataTransfer.files[0];
+            if (f) { fileInput.value = ''; setFile(f); }
+        });
+        // Typing overrides a chosen file so it's clear which will be sent.
+        textArea.addEventListener('input', () => {
+            if (textArea.value.trim()) { fileText = null; dropFile.textContent = ''; }
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            const collection = (fileText != null ? fileText : textArea.value).trim();
+            if (!collection) { showResult('error', 'Choose a collection file or paste the JSON first.'); return; }
+
+            const original = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Importing…';
+            try {
+                const res = await fetch(`/api/projects/${projectId}/targets/import/postman`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: collection
+                });
+                const data = await res.json();
+                if (!res.ok) { throw new Error(data.message || `Import failed (${res.status})`); }
+                let msg = `<strong>Imported ${data.imported} target${data.imported === 1 ? '' : 's'}.</strong>`;
+                if (data.skipped) { msg += ` ${data.skipped} skipped.`; }
+                if (data.warnings && data.warnings.length) {
+                    msg += '<div class="warn">' + data.warnings.map(esc).join('<br>') + '</div>';
+                }
+                msg += '<div class="warn" style="color:#5e82ad">Reloading…</div>';
+                showResult('ok', msg);
+                setTimeout(() => window.location.reload(), 1200);
+            } catch (err) {
+                showResult('error', esc(err.message));
+                submitBtn.disabled = false;
+                submitBtn.textContent = original;
+            }
+        });
+    })();
 })();
 /*]]>*/
 </script>
