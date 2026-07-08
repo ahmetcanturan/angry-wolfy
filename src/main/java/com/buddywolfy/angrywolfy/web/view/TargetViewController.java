@@ -43,7 +43,7 @@ public class TargetViewController {
         }
         targetService.create(form.getName(), form.getDescription(), projectId, form.getPath(),
                 form.getMethod(), form.getType(), toHeaderMap(form.getHeaders()), form.getBody(),
-                form.getRps(), form.getNotes());
+                form.getNotes());
         return "redirect:/projects/" + projectId;
     }
 
@@ -69,7 +69,7 @@ public class TargetViewController {
         }
         targetService.update(id, form.getName(), form.getDescription(), form.getPath(),
                 form.getMethod(), form.getType(), toHeaderMap(form.getHeaders()), form.getBody(),
-                form.getRps(), form.getNotes());
+                form.getNotes());
         return "redirect:/projects/" + projectId;
     }
 

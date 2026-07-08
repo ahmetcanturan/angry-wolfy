@@ -228,6 +228,66 @@
         .rc-toggle-btn.active { background: #fff; color: #12233f; box-shadow: 0 2px 6px -2px rgba(14,35,64,.25); }
         .rc-hint { font-size: 11.5px; color: #93a1b5; margin-top: 12px; }
 
+        /* Check button + single-request result panel */
+        .btn-check {
+            display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-size: 13px;
+            font-weight: 700; color: #3d5580; background: #eef2f8; border: 1px solid #e0e7f1;
+            padding: 8px 14px; border-radius: 9px; cursor: pointer;
+        }
+        .btn-check:hover { background: #e3eaf4; }
+        .btn-check:disabled { opacity: .5; cursor: not-allowed; }
+
+        .check-panel { border-top: 1px solid #eef2f7; background: #fbfcfe; padding: 16px 20px; }
+        .check-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .check-status {
+            font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 12px;
+            padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+        }
+        .check-status.ok    { background: #e3f4ea; color: #1f8a4c; }
+        .check-status.redir { background: #e4eefb; color: #1e5bb8; }
+        .check-status.cerr  { background: #fde8e8; color: #c0392b; }
+        .check-status.pend  { background: #eef2f8; color: #5e82ad; }
+        .check-meta { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #93a1b5; }
+        .check-tabs { display: inline-flex; background: #eef2f7; padding: 3px; border-radius: 9px; gap: 2px; }
+        .check-tab {
+            font-family: inherit; cursor: pointer; border: none; font-size: 12px; font-weight: 700;
+            padding: 5px 12px; border-radius: 7px; background: transparent; color: #5f6f88;
+        }
+        .check-tab.active { background: #fff; color: #12233f; box-shadow: 0 2px 6px -2px rgba(14,35,64,.25); }
+        .check-close {
+            margin-left: auto; width: 26px; height: 26px; border-radius: 8px; border: none; cursor: pointer;
+            background: #eef2f8; color: #7c8aa0; font-size: 12px; font-weight: 700; flex-shrink: 0;
+        }
+        .check-close:hover { background: #e0e7f1; color: #3d5580; }
+        .check-url {
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5f6f88;
+            margin: 10px 0 12px; word-break: break-all;
+        }
+        .check-body pre {
+            margin: 0; background: #0e2340; color: #dbe7fb; border-radius: 12px; padding: 14px 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.55;
+            max-height: 420px; overflow: auto; white-space: pre; tab-size: 2;
+        }
+        .check-body .j-key  { color: #7fb2ff; }
+        .check-body .j-str  { color: #9ff0c8; }
+        .check-body .j-num  { color: #ffd479; }
+        .check-body .j-bool { color: #ff9db1; }
+        .check-body .j-null { color: #9aa7bb; }
+        .check-preview-wrap {
+            max-height: 480px; overflow: auto; background: #fff;
+            border: 1px solid #e6ebf2; border-radius: 12px;
+        }
+        .check-preview {
+            width: 100%; height: 300px; border: 0; display: block;
+            pointer-events: none;   /* look-only: no clicking/navigating inside the rendered page */
+        }   /* height is a fallback; JS grows it to full content so the wrap scrolls */
+        .check-preview-note { font-size: 11.5px; color: #93a1b5; font-style: italic; margin-bottom: 8px; }
+        .check-error {
+            background: #fdeceb; color: #c0392b; border: 1px solid #f4cfcb; border-radius: 11px;
+            padding: 12px 14px; font-size: 13px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+        }
+        .check-empty { font-size: 12.5px; color: #93a1b5; font-style: italic; }
+
         /* running-wolf overlay */
         .run-overlay {
             border-top: 1px solid #eef2f7;
@@ -587,8 +647,12 @@
                         <div class="row-actions">
                             <button type="button" class="btn-config js-config-toggle"
                                     title="Configure run" aria-label="Configure run">⚙</button>
+                            <button type="button" class="btn-check js-check-target"
+                                    th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}"
+                                    th:disabled="${activeConfig == null}"
+                                    title="Send one request and show the response">✓ Check</button>
                             <button type="button" class="btn-run js-run-target"
-                                    th:attr="data-target-id=${t.id}, data-target-name=${t.name},
+                                    th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}, data-target-name=${t.name},
                                              data-target-method=${t.method}, data-target-path=${t.path},
                                              data-target-url=${(activeConfig != null ? activeConfig.baseUrl : '') + t.path}">
                                 <span class="play"></span>Run
@@ -623,7 +687,7 @@
                         <div class="rc-field">
                             <label class="rc-label">Rate limit (req/s)</label>
                             <input type="number" class="rc-input js-cfg-rps" min="0.01" step="any"
-                                   placeholder="unlimited" th:attr="value=${t.rps != null ? t.rps : ''}"/>
+                                   placeholder="unlimited"/>
                         </div>
                     </div>
                     <div class="rc-hint">Leave rate limit blank to send as fast as possible.</div>
@@ -638,6 +702,21 @@
                         <div class="run-overlay-text js-overlay-text">Wolf attacking..</div>
                         <button type="button" class="btn-cancel js-cancel-run">Cancel</button>
                     </div>
+                </div>
+
+                <!-- single-request Check result (hidden until Check is clicked) -->
+                <div class="check-panel js-check-panel" hidden>
+                    <div class="check-head">
+                        <span class="check-status js-check-status">—</span>
+                        <span class="check-meta js-check-meta"></span>
+                        <div class="check-tabs js-check-tabs" hidden>
+                            <button type="button" class="check-tab active js-check-tab" data-view="pretty">Source</button>
+                            <button type="button" class="check-tab js-check-tab" data-view="preview">Preview</button>
+                        </div>
+                        <button type="button" class="check-close js-check-close" title="Close" aria-label="Close">✕</button>
+                    </div>
+                    <div class="check-url js-check-url"></div>
+                    <div class="check-body js-check-body"></div>
                 </div>
 
                 <details class="stats-panel js-stats-panel">
@@ -836,12 +915,14 @@
 
     // Fires the run. Sends our runId so a concurrent DELETE can cancel it, and
     // wires an AbortController so Cancel also stops the browser waiting.
-    async function runLoadTest(targetId, options, runId, signal) {
-        const configId = selectedConfigId();
-        if (!configId) {
+    // configId is explicit for the per-row Run (the active environment); the
+    // launch-test section omits it and falls back to its own env picker.
+    async function runLoadTest(targetId, options, runId, signal, configId) {
+        const cfg = configId || selectedConfigId();
+        if (!cfg) {
             throw new Error('Pick an environment first.');
         }
-        const url = `/api/targets/${targetId}/run?configId=${configId}&runId=${encodeURIComponent(runId)}`;
+        const url = `/api/targets/${targetId}/run?configId=${cfg}&runId=${encodeURIComponent(runId)}`;
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1356,7 +1437,8 @@
             cancelBtn.addEventListener('click', onCancel);
 
             try {
-                const result = await runLoadTest(targetId, readOptions(card), runId, controller.signal);
+                const configId = btn.getAttribute('data-config-id');
+                const result = await runLoadTest(targetId, readOptions(card), runId, controller.signal, configId);
                 fillPanel(card, result);
                 loadHistory(card);   // a successful run was persisted — refresh the strip
             } catch (err) {
@@ -1375,6 +1457,172 @@
                 btn.disabled = false;
                 btn.innerHTML = original;
             }
+        });
+    });
+
+    // ---- single-request Check ------------------------------------------
+    // Escape only the three chars that matter inside a <pre>; quotes stay literal
+    // so the JSON highlighter below can still see them.
+    function escapePre(s) {
+        return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    }
+
+    // Lightweight JSON syntax highlight over already-escaped, pretty-printed text.
+    function highlightJson(pretty) {
+        return escapePre(pretty).replace(
+            /("(?:\\.|[^"\\])*"(?:\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
+            (m) => {
+                let cls = 'j-num';
+                if (m[0] === '"') { cls = /:\s*$/.test(m) ? 'j-key' : 'j-str'; }
+                else if (m === 'true' || m === 'false') { cls = 'j-bool'; }
+                else if (m === 'null') { cls = 'j-null'; }
+                return '<span class="' + cls + '">' + m + '</span>';
+            });
+    }
+
+    function statusClass(status) {
+        if (status >= 200 && status < 300) return 'ok';
+        if (status >= 300 && status < 400) return 'redir';
+        return 'cerr';
+    }
+
+    // Render the response body per its detected kind. HTML gets a Source/Preview
+    // toggle; everything else is shown formatted in a <pre>.
+    function renderCheckBody(card, data) {
+        const bodyEl = card.querySelector('.js-check-body');
+        const tabs = card.querySelector('.js-check-tabs');
+        card._check = data;
+        if (!data.body) {
+            tabs.hidden = true;
+            bodyEl.innerHTML = '<div class="check-empty">Empty response body.</div>';
+            return;
+        }
+        if (data.bodyKind === 'html') {
+            tabs.hidden = false;
+            tabs.querySelectorAll('.js-check-tab').forEach((t) =>
+                t.classList.toggle('active', t.getAttribute('data-view') === 'pretty'));
+            showCheckView(card, 'pretty');
+            return;
+        }
+        tabs.hidden = true;
+        let inner;
+        if (data.bodyKind === 'json') {
+            try { inner = highlightJson(JSON.stringify(JSON.parse(data.body), null, 2)); }
+            catch (e) { inner = escapePre(data.body); }
+        } else {
+            inner = escapePre(data.body);
+        }
+        bodyEl.innerHTML = '<pre>' + inner + '</pre>';
+    }
+
+    // Source = escaped markup in a <pre>; Preview = the HTML rendered in a
+    // sandboxed iframe (scripts/forms/navigation all blocked).
+    function showCheckView(card, view) {
+        const data = card._check;
+        const bodyEl = card.querySelector('.js-check-body');
+        if (view === 'preview') {
+            bodyEl.innerHTML = '';
+            const note = document.createElement('div');
+            note.className = 'check-preview-note';
+            note.textContent = 'Static preview — the page is shown only, not interactive.';
+            const wrap = document.createElement('div');
+            wrap.className = 'check-preview-wrap';
+            const iframe = document.createElement('iframe');
+            iframe.className = 'check-preview';
+            // allow-same-origin (but NOT allow-scripts) lets us measure the content
+            // height so the whole page renders; with scripts off it stays inert.
+            iframe.setAttribute('sandbox', 'allow-same-origin');
+            iframe.setAttribute('scrolling', 'no');
+            iframe.setAttribute('tabindex', '-1'); // keep it out of the keyboard tab order
+            // Grow the frame to its full content height; the wrap caps the visible
+            // height and provides the scrollbar (the frame itself is pointer-inert).
+            iframe.addEventListener('load', () => {
+                try {
+                    const doc = iframe.contentDocument;
+                    const h = doc && doc.documentElement ? doc.documentElement.scrollHeight : 0;
+                    if (h > 0) { iframe.style.height = (h + 2) + 'px'; }
+                } catch (e) { /* measurement blocked — keep the default height */ }
+            });
+            iframe.srcdoc = data.body;
+            wrap.appendChild(iframe);
+            bodyEl.appendChild(note);
+            bodyEl.appendChild(wrap);
+        } else {
+            bodyEl.innerHTML = '<pre>' + escapePre(data.body) + '</pre>';
+        }
+    }
+
+    function showCheck(card, data) {
+        const st = card.querySelector('.js-check-status');
+        st.className = 'check-status js-check-status ' + statusClass(data.status);
+        st.textContent = data.status + (data.reason ? ' ' + data.reason : '');
+        card.querySelector('.js-check-meta').textContent =
+            [data.method, data.durationMs + ' ms', data.contentType || 'no content-type',
+             bytes(data.contentLength)].join('  ·  ') + (data.truncated ? '  ·  truncated' : '');
+        card.querySelector('.js-check-url').textContent = data.url;
+        renderCheckBody(card, data);
+        card.querySelector('.js-check-panel').hidden = false;
+    }
+
+    function showCheckError(card, message) {
+        const st = card.querySelector('.js-check-status');
+        st.className = 'check-status js-check-status cerr';
+        st.textContent = 'Error';
+        card.querySelector('.js-check-meta').textContent = '';
+        card.querySelector('.js-check-url').textContent = '';
+        card.querySelector('.js-check-tabs').hidden = true;
+        const bodyEl = card.querySelector('.js-check-body');
+        bodyEl.innerHTML = '<div class="check-error"></div>';
+        bodyEl.querySelector('.check-error').textContent = message;
+        card.querySelector('.js-check-panel').hidden = false;
+    }
+
+    document.querySelectorAll('.js-check-target').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const card = btn.closest('.target-card');
+            const targetId = btn.getAttribute('data-target-id');
+            const configId = btn.getAttribute('data-config-id');
+            if (!configId) { showCheckError(card, 'Pick an environment first.'); return; }
+
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.textContent = 'Checking…';
+
+            // Pending state so the panel opens immediately.
+            const st = card.querySelector('.js-check-status');
+            st.className = 'check-status js-check-status pend';
+            st.textContent = 'Sending…';
+            card.querySelector('.js-check-meta').textContent = '';
+            card.querySelector('.js-check-url').textContent = '';
+            card.querySelector('.js-check-tabs').hidden = true;
+            card.querySelector('.js-check-body').innerHTML = '';
+            card.querySelector('.js-check-panel').hidden = false;
+
+            try {
+                const res = await fetch(`/api/targets/${targetId}/check?configId=${configId}`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) { throw new Error(data.message || `Request failed (${res.status})`); }
+                showCheck(card, data);
+            } catch (err) {
+                showCheckError(card, err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        });
+    });
+
+    // Close button + Source/Preview tabs on each check panel.
+    document.querySelectorAll('.target-card').forEach((card) => {
+        const closeBtn = card.querySelector('.js-check-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => { card.querySelector('.js-check-panel').hidden = true; });
+        }
+        card.querySelectorAll('.js-check-tab').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                card.querySelectorAll('.js-check-tab').forEach((t) => t.classList.toggle('active', t === tab));
+                showCheckView(card, tab.getAttribute('data-view'));
+            });
         });
     });
 

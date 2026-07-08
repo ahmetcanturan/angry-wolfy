@@ -18,7 +18,6 @@ public record TargetResponse(
         TargetType type,
         Map<String, String> customHeaders,
         String body,
-        Double rps,
         String notes,
         Instant createdAt,
         Instant updatedAt
@@ -34,7 +33,6 @@ public record TargetResponse(
                 target.getType(),
                 new LinkedHashMap<>(target.getCustomHeaders()),
                 target.getBody(),
-                target.getRps(),
                 target.getNotes(),
                 target.getCreatedAt(),
                 target.getUpdatedAt()

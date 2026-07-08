@@ -24,10 +24,10 @@ public class TargetService {
 
     @Transactional
     public Target create(String name, String description, Long projectId, String path, HttpMethod method,
-                          TargetType type, Map<String, String> customHeaders, String body, Double rps, String notes) {
+                          TargetType type, Map<String, String> customHeaders, String body, String notes) {
         var project = projectService.getById(projectId);
         return targetRepository.save(
-                new Target(name, description, project, path, method, type, customHeaders, body, rps, notes));
+                new Target(name, description, project, path, method, type, customHeaders, body, notes));
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +48,7 @@ public class TargetService {
 
     @Transactional
     public Target update(Long id, String name, String description, String path, HttpMethod method,
-                          TargetType type, Map<String, String> customHeaders, String body, Double rps, String notes) {
+                          TargetType type, Map<String, String> customHeaders, String body, String notes) {
         Target target = getById(id);
         target.setName(name);
         target.setDescription(description);
@@ -57,7 +57,6 @@ public class TargetService {
         target.setType(type);
         target.setCustomHeaders(customHeaders);
         target.setBody(body);
-        target.setRps(rps);
         target.setNotes(notes);
         return target;
     }

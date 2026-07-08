@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,7 +74,9 @@ public class OhaRunner {
                 throw new OhaExecutionException(
                         "oha exited with status " + exit + ": " + stderr.strip());
             }
-            return parse(stdout);
+            OhaResult result = parse(stdout);
+            ensureTargetResponded(result, target, config);
+            return result;
         } catch (RuntimeException e) {
             // A cancel calls destroyForcibly(), which can surface as a killed exit
             // code OR as "Stream closed" while draining. Either way, if this run
@@ -124,5 +127,30 @@ public class OhaRunner {
         } catch (RuntimeException e) {
             throw new OhaExecutionException("Failed to parse oha JSON output: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * A run where oha recorded no HTTP responses at all — only connection/DNS
+     * errors — means the target was never actually reached (wrong base URL,
+     * service down, bad host). oha still exits 0 in that case, so translate it
+     * into a clear, actionable failure instead of storing an empty result.
+     */
+    private void ensureTargetResponded(OhaResult result, Target target, Config config) {
+        Map<String, Integer> statuses = result.statusCodeDistribution();
+        Map<String, Integer> errors = result.errorDistribution();
+        boolean gotResponse = statuses != null && !statuses.isEmpty();
+        if (gotResponse || errors == null || errors.isEmpty()) {
+            return;
+        }
+        int failed = errors.values().stream().mapToInt(Integer::intValue).sum();
+        String topError = errors.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("connection error");
+        String url = config.getBaseUrl() + target.getPath();
+        throw new OhaExecutionException(
+                "Could not reach " + target.getMethod() + " " + url + " — all " + failed
+                        + " request(s) failed (" + topError + "). Check the environment's base URL "
+                        + "and that the target service is running.");
     }
 }

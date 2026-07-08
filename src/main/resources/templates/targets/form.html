@@ -371,19 +371,10 @@
                     <span class="wf-error" th:if="${#fields.hasErrors('body')}" th:errors="*{body}">Body error</span>
                 </div>
 
-                <div class="wf-row">
-                    <div class="wf-field">
-                        <label for="rps">Target RPS</label>
-                        <input type="number" id="rps" class="wf-input wf-mono" th:field="*{rps}"
-                               step="any" min="0.01" placeholder="e.g. 60"/>
-                        <span class="wf-error" th:if="${#fields.hasErrors('rps')}" th:errors="*{rps}">Rps error</span>
-                    </div>
-
-                    <div class="wf-field">
-                        <label for="notes">Notes</label>
-                        <input type="text" id="notes" class="wf-input" th:field="*{notes}" placeholder="Optional notes"/>
-                        <span class="wf-error" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}">Notes error</span>
-                    </div>
+                <div class="wf-field">
+                    <label for="notes">Notes</label>
+                    <input type="text" id="notes" class="wf-input" th:field="*{notes}" placeholder="Optional notes"/>
+                    <span class="wf-error" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}">Notes error</span>
                 </div>
 
                 <div class="wf-actions">

@@ -18,7 +18,6 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -71,9 +70,6 @@ public class Target {
     @Column(columnDefinition = "TEXT")
     private String body;
 
-    @Positive
-    private Double rps;
-
     @Size(max = 2000)
     @Column(length = 2000)
     private String notes;
@@ -89,7 +85,7 @@ public class Target {
     }
 
     public Target(String name, String description, Project project, String path, HttpMethod method,
-                   TargetType type, Map<String, String> customHeaders, String body, Double rps, String notes) {
+                   TargetType type, Map<String, String> customHeaders, String body, String notes) {
         this.name = name;
         this.description = description;
         this.project = project;
@@ -98,7 +94,6 @@ public class Target {
         this.type = type != null ? type : TargetType.REST;
         this.customHeaders = customHeaders != null ? new LinkedHashMap<>(customHeaders) : new LinkedHashMap<>();
         this.body = body;
-        this.rps = rps;
         this.notes = notes;
     }
 
@@ -175,14 +170,6 @@ public class Target {
 
     public void setBody(String body) {
         this.body = body;
-    }
-
-    public Double getRps() {
-        return rps;
-    }
-
-    public void setRps(Double rps) {
-        this.rps = rps;
     }
 
     public String getNotes() {

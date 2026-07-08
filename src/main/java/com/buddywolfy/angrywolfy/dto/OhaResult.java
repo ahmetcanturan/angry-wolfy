@@ -27,31 +27,46 @@ public record OhaResult(
         Map<String, Integer> statusCodeDistribution,
         Map<String, Integer> errorDistribution) {
 
-    /** Aggregate throughput and timing for the whole run (seconds unless noted). */
+    /**
+     * Aggregate throughput and timing for the whole run (seconds unless noted).
+     *
+     * <p>The latency-derived fields ({@code slowest}, {@code fastest},
+     * {@code average}, {@code sizePerRequest}) are boxed because oha emits them as
+     * {@code null} when a run produced no successful HTTP responses — e.g. every
+     * request hit a connection error against an unreachable/wrong base URL. A
+     * primitive would make Jackson reject the whole payload instead of letting the
+     * run surface its error distribution.
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Summary(
             double successRate,
             double total,
-            double slowest,
-            double fastest,
-            double average,
+            Double slowest,
+            Double fastest,
+            Double average,
             double requestsPerSec,
             long totalData,
-            long sizePerRequest,
+            Long sizePerRequest,
             double sizePerSec) {
     }
 
-    /** Latency percentiles in seconds; keys are p10..p99.99 in oha's JSON. */
+    /**
+     * Latency percentiles in seconds; keys are p10..p99.99 in oha's JSON.
+     *
+     * <p>Boxed for the same reason as {@link Summary}: with zero successful
+     * responses there are no samples, so oha reports every percentile as
+     * {@code null}.
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Percentiles(
-            @com.fasterxml.jackson.annotation.JsonProperty("p10") double p10,
-            @com.fasterxml.jackson.annotation.JsonProperty("p25") double p25,
-            @com.fasterxml.jackson.annotation.JsonProperty("p50") double p50,
-            @com.fasterxml.jackson.annotation.JsonProperty("p75") double p75,
-            @com.fasterxml.jackson.annotation.JsonProperty("p90") double p90,
-            @com.fasterxml.jackson.annotation.JsonProperty("p95") double p95,
-            @com.fasterxml.jackson.annotation.JsonProperty("p99") double p99,
-            @com.fasterxml.jackson.annotation.JsonProperty("p99.9") double p999,
-            @com.fasterxml.jackson.annotation.JsonProperty("p99.99") double p9999) {
+            @com.fasterxml.jackson.annotation.JsonProperty("p10") Double p10,
+            @com.fasterxml.jackson.annotation.JsonProperty("p25") Double p25,
+            @com.fasterxml.jackson.annotation.JsonProperty("p50") Double p50,
+            @com.fasterxml.jackson.annotation.JsonProperty("p75") Double p75,
+            @com.fasterxml.jackson.annotation.JsonProperty("p90") Double p90,
+            @com.fasterxml.jackson.annotation.JsonProperty("p95") Double p95,
+            @com.fasterxml.jackson.annotation.JsonProperty("p99") Double p99,
+            @com.fasterxml.jackson.annotation.JsonProperty("p99.9") Double p999,
+            @com.fasterxml.jackson.annotation.JsonProperty("p99.99") Double p9999) {
     }
 }

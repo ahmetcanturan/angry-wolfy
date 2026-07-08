@@ -80,7 +80,16 @@ public class Chart {
         this.totalRequests = totalRequestsOf(result);
         this.requestsPerSec = result.summary() != null ? result.summary().requestsPerSec() : 0;
         this.successRate = result.summary() != null ? result.summary().successRate() : 0;
-        this.p95Ms = result.latencyPercentiles() != null ? result.latencyPercentiles().p95() * 1000 : 0;
+        this.p95Ms = p95MsOf(result);
+    }
+
+    /** p95 in ms, or 0 when oha reported no percentile (a run with no successful responses). */
+    private static double p95MsOf(OhaResult result) {
+        OhaResult.Percentiles p = result.latencyPercentiles();
+        if (p == null || p.p95() == null) {
+            return 0;
+        }
+        return p.p95() * 1000;
     }
 
     private static long totalRequestsOf(OhaResult result) {

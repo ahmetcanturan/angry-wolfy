@@ -36,7 +36,7 @@ class TargetRepositoryTests {
 
         Target saved = targetRepository.save(new Target(
                 "Get users", "Fetches all users", project, "/api/users", HttpMethod.GET, TargetType.REST,
-                headers, null, 50.0, "smoke test target"));
+                headers, null, "smoke test target"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCreatedAt()).isNotNull();
@@ -49,7 +49,6 @@ class TargetRepositoryTests {
         assertThat(found.get().getMethod()).isEqualTo(HttpMethod.GET);
         assertThat(found.get().getType()).isEqualTo(TargetType.REST);
         assertThat(found.get().getCustomHeaders()).containsEntry("Authorization", "Bearer token123");
-        assertThat(found.get().getRps()).isEqualTo(50.0);
         assertThat(found.get().getNotes()).isEqualTo("smoke test target");
     }
 
@@ -58,7 +57,7 @@ class TargetRepositoryTests {
         Project project = persistedProject();
 
         Target saved = targetRepository.save(new Target(
-                "Default method", null, project, "/api/x", null, null, Map.of(), null, null, null));
+                "Default method", null, project, "/api/x", null, null, Map.of(), null, null));
 
         assertThat(saved.getMethod()).isEqualTo(HttpMethod.GET);
         assertThat(saved.getType()).isEqualTo(TargetType.REST);
@@ -70,7 +69,7 @@ class TargetRepositoryTests {
 
         Target saved = targetRepository.save(new Target(
                 "Create user", null, project, "/api/users", HttpMethod.POST, TargetType.REST,
-                Map.of("Content-Type", "application/json"), "{\"name\":\"test\"}", 10.0, null));
+                Map.of("Content-Type", "application/json"), "{\"name\":\"test\"}", null));
 
         Target found = targetRepository.findById(saved.getId()).orElseThrow();
         assertThat(found.getMethod()).isEqualTo(HttpMethod.POST);
@@ -83,7 +82,7 @@ class TargetRepositoryTests {
 
         Target saved = targetRepository.save(new Target(
                 "GraphQL query", null, project, "/graphql", HttpMethod.POST, TargetType.GRAPHQL,
-                Map.of(), "{\"query\":\"{ users { id } }\"}", null, null));
+                Map.of(), "{\"query\":\"{ users { id } }\"}", null));
 
         Target found = targetRepository.findById(saved.getId()).orElseThrow();
         assertThat(found.getType()).isEqualTo(TargetType.GRAPHQL);
@@ -93,9 +92,9 @@ class TargetRepositoryTests {
     void findsTargetsByProjectId() {
         Project project = persistedProject();
         targetRepository.save(new Target("One", null, project, "/a", HttpMethod.GET, TargetType.REST,
-                Map.of(), null, null, null));
+                Map.of(), null, null));
         targetRepository.save(new Target("Two", null, project, "/b", HttpMethod.POST, TargetType.REST,
-                Map.of(), null, null, null));
+                Map.of(), null, null));
 
         List<Target> found = targetRepository.findByProjectId(project.getId());
 
@@ -107,16 +106,7 @@ class TargetRepositoryTests {
         Project project = persistedProject();
 
         assertThatThrownBy(() -> targetRepository.saveAndFlush(
-                new Target("Bad", null, project, "", HttpMethod.GET, TargetType.REST, Map.of(), null, null, null)))
-                .isInstanceOf(ConstraintViolationException.class);
-    }
-
-    @Test
-    void rejectsNonPositiveRps() {
-        Project project = persistedProject();
-
-        assertThatThrownBy(() -> targetRepository.saveAndFlush(
-                new Target("Bad rps", null, project, "/a", HttpMethod.GET, TargetType.REST, Map.of(), null, 0.0, null)))
+                new Target("Bad", null, project, "", HttpMethod.GET, TargetType.REST, Map.of(), null, null)))
                 .isInstanceOf(ConstraintViolationException.class);
     }
 }

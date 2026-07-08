@@ -1,5 +1,6 @@
 package com.buddywolfy.angrywolfy.web.rest;
 
+import com.buddywolfy.angrywolfy.dto.CheckResult;
 import com.buddywolfy.angrywolfy.dto.OhaOptions;
 import com.buddywolfy.angrywolfy.dto.OhaResult;
 import com.buddywolfy.angrywolfy.entity.Config;
@@ -8,6 +9,7 @@ import com.buddywolfy.angrywolfy.service.ChartService;
 import com.buddywolfy.angrywolfy.service.ConfigService;
 import com.buddywolfy.angrywolfy.service.OhaRunRegistry;
 import com.buddywolfy.angrywolfy.service.OhaRunner;
+import com.buddywolfy.angrywolfy.service.TargetCheckService;
 import com.buddywolfy.angrywolfy.service.TargetService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,17 +45,20 @@ public class LoadTestController {
     private final OhaRunner ohaRunner;
     private final OhaRunRegistry runRegistry;
     private final ChartService chartService;
+    private final TargetCheckService checkService;
 
     public LoadTestController(TargetService targetService,
                               ConfigService configService,
                               OhaRunner ohaRunner,
                               OhaRunRegistry runRegistry,
-                              ChartService chartService) {
+                              ChartService chartService,
+                              TargetCheckService checkService) {
         this.targetService = targetService;
         this.configService = configService;
         this.ohaRunner = ohaRunner;
         this.runRegistry = runRegistry;
         this.chartService = chartService;
+        this.checkService = checkService;
     }
 
     /**
@@ -82,6 +87,23 @@ public class LoadTestController {
         OhaResult result = ohaRunner.run(id, target, config, effective);
         chartService.save(target, config, result);
         return ResponseEntity.ok().header(RUN_ID_HEADER, id).body(result);
+    }
+
+    /**
+     * {@code POST /api/targets/{targetId}/check?configId={id}} — sends a single
+     * real HTTP request to the target in the given environment and returns the
+     * response (status, timing, and body) for display. No load test, no history.
+     *
+     * @param targetId the endpoint to hit once
+     * @param configId the environment supplying the base URL and shared headers
+     * @return the response summary and body
+     */
+    @PostMapping("/api/targets/{targetId}/check")
+    public CheckResult check(@PathVariable Long targetId, @RequestParam Long configId) {
+        Target target = targetService.getById(targetId);
+        Config config = configService.getById(configId);
+        requireSameProject(target, config);
+        return checkService.check(target, config);
     }
 
     /**

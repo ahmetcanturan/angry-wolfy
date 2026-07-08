@@ -6,7 +6,6 @@ import com.buddywolfy.angrywolfy.enums.TargetType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
@@ -37,9 +36,6 @@ public class TargetForm {
 
     private String body;
 
-    @Positive
-    private Double rps;
-
     @Size(max = 2000)
     private String notes;
 
@@ -47,7 +43,7 @@ public class TargetForm {
     }
 
     public TargetForm(String name, String description, String path, HttpMethod method, TargetType type,
-                       List<HeaderEntryForm> headers, String body, Double rps, String notes) {
+                       List<HeaderEntryForm> headers, String body, String notes) {
         this.name = name;
         this.description = description;
         this.path = path;
@@ -55,7 +51,6 @@ public class TargetForm {
         this.type = type;
         this.headers = headers != null ? headers : new ArrayList<>();
         this.body = body;
-        this.rps = rps;
         this.notes = notes;
     }
 
@@ -68,7 +63,6 @@ public class TargetForm {
                 target.getType(),
                 toHeaderEntryForms(target.getCustomHeaders()),
                 target.getBody(),
-                target.getRps(),
                 target.getNotes());
     }
 
@@ -136,14 +130,6 @@ public class TargetForm {
 
     public void setBody(String body) {
         this.body = body;
-    }
-
-    public Double getRps() {
-        return rps;
-    }
-
-    public void setRps(Double rps) {
-        this.rps = rps;
     }
 
     public String getNotes() {

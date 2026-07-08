@@ -2,34 +2,205 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${projectId} != null ? 'Edit project' : 'New project'">Project form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${projectId} != null ? 'Edit project — Angrywolfy' : 'New project — Angrywolfy'">Project form</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1a2740;
+        }
+        a { text-decoration: none; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cfd8e6; border-radius: 8px; border: 2px solid #eef2f7; }
+
+        .page { min-height: 100vh; display: flex; flex-direction: column; background: #f7f9fc; }
+
+        /* top nav — shared with list & detail pages */
+        .topnav {
+            height: 60px; flex-shrink: 0; background: #0e2340;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
+        }
+        .topnav-left { display: flex; align-items: center; gap: 36px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 30px; height: 30px; display: block; }
+        .brand span { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+        .navlinks { display: flex; gap: 4px; }
+        .navlinks span, .navlinks a {
+            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 7px 12px;
+        }
+        .navlinks a.active {
+            font-weight: 700; color: #fff; padding: 7px 14px;
+            background: rgba(255,255,255,.1); border-radius: 9px;
+        }
+        .selfhosted {
+            display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+            color: #6a8cb5; font-family: 'JetBrains Mono', monospace;
+        }
+        .selfhosted .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #3ad07f;
+            box-shadow: 0 0 0 3px rgba(58,208,127,.2);
+        }
+
+        /* page band */
+        .band { background: #fff; border-bottom: 1px solid #e6ebf2; }
+        .band-inner { max-width: 760px; margin: 0 auto; padding: 26px 32px; }
+        .breadcrumb {
+            font-size: 12px; color: #93a1b5; font-weight: 600;
+            display: flex; gap: 6px; align-items: center;
+        }
+        .breadcrumb a { color: #93a1b5; }
+        .breadcrumb .sep { opacity: .5; }
+        .breadcrumb .current { color: #5e82ad; }
+        .band-head { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+        .logo-tile {
+            width: 54px; height: 54px; border-radius: 15px; flex-shrink: 0;
+            background: linear-gradient(140deg,#1b355d,#0e2340);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-tile img { width: 40px; height: 40px; display: block; }
+        .band-head h1 { margin: 0; font-size: 27px; font-weight: 800; color: #12233f; letter-spacing: -.02em; }
+        .band-head p.sub { margin: 5px 0 0; font-size: 14px; color: #64748b; }
+
+        /* form card */
+        .content { flex: 1; max-width: 760px; width: 100%; margin: 0 auto; padding: 26px 32px 60px; }
+        .card {
+            background: #fff; border: 1px solid #e6ebf2; border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(14,35,64,.04); overflow: hidden;
+        }
+        form { display: flex; flex-direction: column; }
+        .card-body { padding: 26px 28px; display: flex; flex-direction: column; gap: 22px; }
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .field-label {
+            font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #93a1b5;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .field-label .req { color: #c0392b; font-size: 12px; }
+        .field-hint { font-size: 12px; color: #93a1b5; font-weight: 500; margin-top: -2px; }
+
+        .input, .textarea {
+            width: 100%; border: 1px solid #dbe3ee; border-radius: 10px; padding: 11px 13px;
+            font-size: 14px; color: #1a2740; outline: none; background: #fff;
+            font-family: inherit; transition: border-color .12s ease, box-shadow .12s ease;
+        }
+        .input::placeholder, .textarea::placeholder { color: #aab6c8; }
+        .input:focus, .textarea:focus {
+            border-color: #6a8cb5; box-shadow: 0 0 0 3px rgba(106,140,181,.15);
+        }
+        .input.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
+        .input.invalid, .textarea.invalid { border-color: #e0a5a0; box-shadow: 0 0 0 3px rgba(192,57,43,.1); }
+        .error { color: #c0392b; font-size: 12.5px; font-weight: 600; }
+
+        .card-foot {
+            display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+            border-top: 1px solid #eef2f7; padding: 16px 28px; background: #fbfcfe;
+        }
+        .btn-cancel {
+            font-family: inherit; font-size: 14px; font-weight: 700; color: #3d5580;
+            background: #eef2f8; border: 1px solid #e0e7f1; padding: 11px 18px; border-radius: 11px;
+            cursor: pointer; text-decoration: none; display: inline-block;
+        }
+        .btn-cancel:hover { background: #e3eaf4; }
+        .btn-dark {
+            display: inline-flex; align-items: center; gap: 8px; background: #0e2340; color: #fff;
+            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px 22px;
+            border-radius: 11px; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(14,35,64,.6);
+        }
+        .btn-dark:hover { background: #142c4f; }
+    </style>
 </head>
 <body>
-<h1 th:text="${projectId} != null ? 'Edit project' : 'New project'">Project form</h1>
+<div class="page">
 
-<form th:action="${projectId != null ? '/projects/' + projectId : '/projects'}"
-      th:object="${project}" method="post">
+    <!-- top nav -->
+    <header class="topnav">
+        <div class="topnav-left">
+            <div class="brand">
+                <img src="/assets/wolfy.png" alt="Angrywolfy">
+                <span>Angrywolfy</span>
+            </div>
+            <nav class="navlinks">
+                <span>Overview</span>
+                <a th:href="@{/projects}" class="active">Projects</a>
+                <span>Test Runs</span>
+                <span>Reports</span>
+            </nav>
+        </div>
+        <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+    </header>
 
-    <div>
-        <label for="name">Name</label>
-        <input type="text" id="name" th:field="*{name}"/>
-        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color:red">Name error</span>
+    <!-- page band -->
+    <div class="band">
+        <div class="band-inner">
+            <div class="breadcrumb">
+                <a th:href="@{/projects}">Projects</a>
+                <span class="sep">/</span>
+                <span class="current" th:text="${projectId} != null ? 'Edit' : 'New project'">New project</span>
+            </div>
+            <div class="band-head">
+                <div class="logo-tile"><img src="/assets/wolfy.png" alt=""></div>
+                <div>
+                    <h1 th:text="${projectId} != null ? 'Edit project' : 'New project'">New project</h1>
+                    <p class="sub" th:text="${projectId != null
+                        ? 'Update the details for this project.'
+                        : 'Give your project a name and point it at the code you want to load-test.'}">
+                        Give your project a name and point it at the code you want to load-test.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div>
-        <label for="description">Description</label>
-        <textarea id="description" th:field="*{description}"></textarea>
-        <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}" style="color:red">Description error</span>
-    </div>
+    <!-- form -->
+    <div class="content">
+        <div class="card">
+            <form th:action="${projectId != null ? '/projects/' + projectId : '/projects'}"
+                  th:object="${project}" method="post" novalidate>
+                <div class="card-body">
 
-    <div>
-        <label for="repositoryPath">Repository path</label>
-        <input type="text" id="repositoryPath" th:field="*{repositoryPath}"/>
-        <span th:if="${#fields.hasErrors('repositoryPath')}" th:errors="*{repositoryPath}" style="color:red">Repository path error</span>
-    </div>
+                    <div class="field">
+                        <label class="field-label" for="name">Name <span class="req">*</span></label>
+                        <input type="text" id="name" class="input" th:field="*{name}"
+                               th:classappend="${#fields.hasErrors('name')} ? ' invalid' : ''"
+                               placeholder="e.g. Payments API" autofocus/>
+                        <span class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name error</span>
+                    </div>
 
-    <button type="submit">Save</button>
-    <a th:href="@{/projects}">Cancel</a>
-</form>
+                    <div class="field">
+                        <label class="field-label" for="description">Description</label>
+                        <div class="field-hint">A short note on what this project is — shown on its card.</div>
+                        <textarea id="description" class="textarea" th:field="*{description}"
+                                  th:classappend="${#fields.hasErrors('description')} ? ' invalid' : ''"
+                                  placeholder="What does this service do?"></textarea>
+                        <span class="error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Description error</span>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="repositoryPath">Repository path</label>
+                        <div class="field-hint">Where the code lives, e.g. <code>acme/payments</code> or a local path.</div>
+                        <input type="text" id="repositoryPath" class="input mono" th:field="*{repositoryPath}"
+                               th:classappend="${#fields.hasErrors('repositoryPath')} ? ' invalid' : ''"
+                               placeholder="acme/payments"/>
+                        <span class="error" th:if="${#fields.hasErrors('repositoryPath')}" th:errors="*{repositoryPath}">Repository path error</span>
+                    </div>
+
+                </div>
+                <div class="card-foot">
+                    <a class="btn-cancel"
+                       th:href="${projectId != null ? '/projects/' + projectId : '/projects'}">Cancel</a>
+                    <button type="submit" class="btn-dark"
+                            th:text="${projectId} != null ? 'Save changes' : 'Create project'">Create project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 </body>
 </html>

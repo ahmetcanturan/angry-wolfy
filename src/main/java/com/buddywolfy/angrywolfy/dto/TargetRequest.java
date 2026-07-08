@@ -4,7 +4,6 @@ import com.buddywolfy.angrywolfy.enums.HttpMethod;
 import com.buddywolfy.angrywolfy.enums.TargetType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.Map;
@@ -17,7 +16,6 @@ public record TargetRequest(
         @NotNull TargetType type,
         Map<String, String> customHeaders,
         String body,
-        @Positive Double rps,
         @Size(max = 2000) String notes
 ) {
 }

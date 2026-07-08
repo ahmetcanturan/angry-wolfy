@@ -47,14 +47,13 @@ class TargetServiceTests {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Target result = targetService.create("Get users", "desc", 1L, "/api/users", HttpMethod.GET,
-                TargetType.REST, Map.of("Authorization", "Bearer x"), null, 25.0, "note");
+                TargetType.REST, Map.of("Authorization", "Bearer x"), null, "note");
 
         assertThat(result.getName()).isEqualTo("Get users");
         assertThat(result.getPath()).isEqualTo("/api/users");
         assertThat(result.getMethod()).isEqualTo(HttpMethod.GET);
         assertThat(result.getType()).isEqualTo(TargetType.REST);
         assertThat(result.getCustomHeaders()).containsEntry("Authorization", "Bearer x");
-        assertThat(result.getRps()).isEqualTo(25.0);
         assertThat(result.getNotes()).isEqualTo("note");
         verify(targetRepository).save(ArgumentMatchers.any(Target.class));
     }
@@ -62,7 +61,7 @@ class TargetServiceTests {
     @Test
     void getByIdReturnsTargetWhenFound() {
         Target existing = new Target("Get users", null, project(), "/api/users", HttpMethod.GET,
-                TargetType.REST, Map.of(), null, null, null);
+                TargetType.REST, Map.of(), null, null);
         when(targetRepository.findById(1L)).thenReturn(Optional.of(existing));
 
         Target result = targetService.getById(1L);
@@ -82,7 +81,7 @@ class TargetServiceTests {
     @Test
     void getByProjectIdDelegatesToRepository() {
         List<Target> targets = List.of(new Target("One", null, project(), "/a", HttpMethod.GET,
-                TargetType.REST, Map.of(), null, null, null));
+                TargetType.REST, Map.of(), null, null));
         when(targetRepository.findByProjectId(1L)).thenReturn(targets);
 
         assertThat(targetService.getByProjectId(1L)).isEqualTo(targets);
@@ -91,11 +90,11 @@ class TargetServiceTests {
     @Test
     void updateMutatesTheManagedEntityWithoutCallingSave() {
         Target existing = new Target("Old", null, project(), "/old", HttpMethod.GET, TargetType.REST,
-                Map.of(), null, null, null);
+                Map.of(), null, null);
         when(targetRepository.findById(1L)).thenReturn(Optional.of(existing));
 
         Target result = targetService.update(1L, "New", "new desc", "/new", HttpMethod.POST,
-                TargetType.GRAPHQL, Map.of("X-Api-Key", "k"), "{}", 30.0, "updated note");
+                TargetType.GRAPHQL, Map.of("X-Api-Key", "k"), "{}", "updated note");
 
         assertThat(result.getName()).isEqualTo("New");
         assertThat(result.getPath()).isEqualTo("/new");
@@ -103,7 +102,6 @@ class TargetServiceTests {
         assertThat(result.getType()).isEqualTo(TargetType.GRAPHQL);
         assertThat(result.getCustomHeaders()).containsEntry("X-Api-Key", "k");
         assertThat(result.getBody()).isEqualTo("{}");
-        assertThat(result.getRps()).isEqualTo(30.0);
         assertThat(result.getNotes()).isEqualTo("updated note");
         verify(targetRepository, never()).save(ArgumentMatchers.any(Target.class));
     }
@@ -113,7 +111,7 @@ class TargetServiceTests {
         when(targetRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> targetService.update(99L, "n", "d", "/p", HttpMethod.GET,
-                TargetType.REST, Map.of(), null, null, null))
+                TargetType.REST, Map.of(), null, null))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
