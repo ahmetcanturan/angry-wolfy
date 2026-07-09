@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview — Angrywolfy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1a2740;
+        }
+        a { text-decoration: none; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cfd8e6; border-radius: 8px; border: 2px solid #eef2f7; }
+
+        .page { min-height: 100vh; display: flex; flex-direction: column; background: #f7f9fc; }
+
+        /* top nav — shared with projects pages */
+        .topnav {
+            height: 64px; flex-shrink: 0;
+            background: linear-gradient(180deg, #143059, #0e2340 72%);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+            box-shadow: 0 2px 14px -6px rgba(6,16,34,.6);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
+            position: sticky; top: 0; z-index: 30;
+        }
+        .topnav-left { display: flex; align-items: center; gap: 34px; }
+        .brand { display: flex; align-items: center; gap: 11px; }
+        .brand-logo {
+            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(130% 130% at 30% 15%, rgba(105,150,190,.28), rgba(105,150,190,.05));
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+            transition: box-shadow .15s ease;
+        }
+        .brand:hover .brand-logo { box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+        .brand-logo img { width: 30px; height: 30px; display: block; }
+        .brand-text { display: flex; flex-direction: column; gap: 3px; line-height: 1.05; }
+        .brand-text b { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+        .brand-text small {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .16em;
+            text-transform: uppercase; color: #6a8cb5;
+        }
+        .navlinks { display: flex; align-items: center; gap: 2px; }
+        .navlinks a, .navlinks span {
+            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 8px 13px;
+            border-radius: 9px; transition: color .12s ease, background .12s ease;
+        }
+        .navlinks a:not(.active):hover { color: #e4ecf7; background: rgba(255,255,255,.07); }
+        .navlinks a.active { font-weight: 700; color: #fff; background: rgba(255,255,255,.12); }
+        .navlinks span { color: #55709b; cursor: default; }
+        .selfhosted {
+            display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+            color: #7f9ac0; font-family: 'JetBrains Mono', monospace;
+            padding: 6px 13px; border-radius: 999px;
+            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07);
+        }
+        .selfhosted .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #3ad07f;
+            box-shadow: 0 0 0 3px rgba(58,208,127,.2);
+        }
+        .topnav-right { display: flex; align-items: center; gap: 14px; }
+        .gh-link {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 9px; color: #8ea3c4;
+            transition: color .12s ease, background .12s ease;
+        }
+        .gh-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+        .gh-link svg { width: 20px; height: 20px; display: block; fill: currentColor; }
+
+        /* page band */
+        .band { background: #fff; border-bottom: 1px solid #e6ebf2; }
+        .band-inner { max-width: 1080px; margin: 0 auto; padding: 26px 32px; }
+        .breadcrumb {
+            font-size: 12px; color: #93a1b5; font-weight: 600;
+            display: flex; gap: 6px; align-items: center;
+        }
+        .breadcrumb .current { color: #5e82ad; }
+        .band-head { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px; gap: 16px; flex-wrap: wrap; }
+        .band-head h1 { margin: 0; font-size: 27px; font-weight: 800; color: #12233f; letter-spacing: -.02em; }
+        .band-head p.sub { margin: 5px 0 0; font-size: 14px; color: #64748b; }
+        .btn-dark {
+            display: inline-flex; align-items: center; gap: 8px; background: #0e2340; color: #fff;
+            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px 20px;
+            border-radius: 11px; cursor: pointer; box-shadow: 0 8px 20px -8px rgba(14,35,64,.6);
+        }
+        .btn-dark:hover { background: #142c4f; }
+
+        /* content */
+        .content { flex: 1; max-width: 1080px; width: 100%; margin: 0 auto; padding: 26px 32px 60px; }
+
+        /* stat tiles */
+        .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stat {
+            background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; padding: 15px 17px;
+            box-shadow: 0 1px 2px rgba(14,35,64,.04);
+        }
+        .stat .label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #93a1b5; }
+        .stat .value { font-size: 25px; font-weight: 800; color: #12233f; letter-spacing: -.02em; margin-top: 7px; }
+        .stat .value small { font-size: 13px; font-weight: 700; color: #7c8aa0; margin-left: 2px; }
+
+        /* two-column layout */
+        .cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+        @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+        .panel { background: #fff; border: 1px solid #e6ebf2; border-radius: 15px; overflow: hidden; box-shadow: 0 1px 2px rgba(14,35,64,.04); }
+        .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #eef2f7; }
+        .panel-head h2 { margin: 0; font-size: 15px; font-weight: 800; color: #12233f; letter-spacing: -.01em; }
+        .panel-head a.viewall { font-size: 12.5px; font-weight: 700; color: #5e82ad; }
+        .panel-head a.viewall:hover { color: #3f6799; }
+
+        /* recent runs feed */
+        .run { display: flex; align-items: center; gap: 14px; padding: 13px 20px; border-bottom: 1px solid #f1f4f9; color: inherit; }
+        .run:last-child { border-bottom: 0; }
+        .run:hover { background: #fbfcfe; }
+        .run-main { min-width: 0; flex: 1; }
+        .run-target { font-size: 14px; font-weight: 700; color: #1a2740; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .run-sub { font-size: 12px; color: #93a1b5; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .run-metrics { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+        .metric { text-align: right; }
+        .metric .m-val { font-size: 13.5px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
+        .metric .m-lab { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #a3aec0; margin-top: 1px; }
+        .badge { font-size: 11.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+        .badge.ok { background: #e3f7ec; color: #1f8f52; }
+        .badge.warn { background: #fdf3e0; color: #b7791f; }
+        .badge.bad { background: #fde8e8; color: #c0392b; }
+        .run-time { font-size: 11.5px; color: #93a1b5; font-weight: 600; white-space: nowrap; flex-shrink: 0; width: 88px; text-align: right; }
+        @media (max-width: 560px) { .run-metrics .metric.hide-sm { display: none; } .run-time { display: none; } }
+
+        /* project rollup */
+        .proj { display: flex; align-items: center; gap: 12px; padding: 13px 20px; border-bottom: 1px solid #f1f4f9; color: inherit; }
+        .proj:last-child { border-bottom: 0; }
+        .proj:hover { background: #fbfcfe; }
+        .proj-logo {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            background: linear-gradient(140deg,#1b355d,#0e2340);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .proj-logo img { width: 22px; height: 22px; display: block; }
+        .proj-main { min-width: 0; flex: 1; }
+        .proj-name { font-size: 13.5px; font-weight: 700; color: #1a2740; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .proj-sub { font-size: 11.5px; color: #93a1b5; margin-top: 2px; }
+        .proj-rps { text-align: right; flex-shrink: 0; }
+        .proj-rps .v { font-size: 13px; font-weight: 800; color: #12233f; font-family: 'JetBrains Mono', monospace; }
+        .proj-rps .l { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #a3aec0; }
+
+        /* empty states */
+        .empty { padding: 34px 24px; color: #7c8aa0; font-size: 13.5px; text-align: center; }
+        .empty a { color: #5e82ad; font-weight: 700; }
+
+        /* featured "latest test" charts panel */
+        .latest { margin-bottom: 16px; }
+        .latest .panel-head { align-items: flex-start; }
+        .latest-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+        .latest-title h2 { margin: 0; }
+        .latest-endpoint { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .method-badge {
+            font-size: 10.5px; font-weight: 800; letter-spacing: .03em; padding: 4px 8px;
+            text-align: center; border-radius: 7px; font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0; display: inline-block;
+        }
+        .ep-url {
+            font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #4a5f80; font-weight: 600;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        }
+        .latest-sub { font-size: 12.5px; color: #93a1b5; font-weight: 600; }
+        .latest-sub b { color: #4a5f80; font-weight: 700; }
+        .latest-badges { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+        .chip {
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+            padding: 5px 10px; border-radius: 9px; background: #f1f5fb; color: #3d5580; white-space: nowrap;
+        }
+        .chip small { color: #93a1b5; font-weight: 600; }
+        .charts-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 22px; padding: 20px; }
+        @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+            color: #93a1b5; margin-bottom: 12px;
+        }
+        .chart-box, .donut-box { position: relative; width: 100%; height: 210px; }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- top nav -->
+    <header class="topnav">
+        <div class="topnav-left">
+            <a th:href="@{/projects}" class="brand">
+                <span class="brand-logo"><img src="/assets/wolfy.png?v=2" alt="Angrywolfy"></span>
+                <span class="brand-text"><b>Angrywolfy</b><small>Load Testing</small></span>
+            </a>
+            <nav class="navlinks">
+                <a th:href="@{/overview}" class="active">Overview</a>
+                <a th:href="@{/projects}">Projects</a>
+                <span title="Coming soon">Test Runs</span>
+                <span title="Coming soon">Reports</span>
+            </nav>
+        </div>
+        <div class="topnav-right">
+            <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+            <a class="gh-link" href="https://github.com/ahmetcanturan/angry-wolfy"
+               target="_blank" rel="noopener" title="View source on GitHub" aria-label="View source on GitHub">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.05-.02-2.06-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.41 1.02.01 2.04.14 3 .41 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.56 22.3 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- page band -->
+    <div class="band">
+        <div class="band-inner">
+            <div class="breadcrumb">
+                <span class="current">Overview</span>
+            </div>
+            <div class="band-head">
+                <div>
+                    <h1>Overview</h1>
+                    <p class="sub">A snapshot of your load-testing activity across every project.</p>
+                </div>
+                <a th:href="@{/projects/new}" class="btn-dark">＋ New project</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- dashboard -->
+    <div class="content">
+
+        <!-- stat tiles -->
+        <div class="stats">
+            <div class="stat">
+                <div class="label">Projects</div>
+                <div class="value" th:text="${dashboard.projectCount}">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Targets</div>
+                <div class="value" th:text="${dashboard.targetCount}">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Configs</div>
+                <div class="value" th:text="${dashboard.configCount}">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Runs stored</div>
+                <div class="value" th:text="${dashboard.runCount}">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Requests fired</div>
+                <div class="value" th:text="${#numbers.formatInteger(dashboard.totalRequests, 1, 'COMMA')}">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Avg success</div>
+                <div class="value">
+                    <span th:text="${dashboard.runCount > 0 ? #numbers.formatDecimal(dashboard.avgSuccessRate * 100, 1, 1) : '—'}">—</span><small th:if="${dashboard.runCount > 0}">%</small>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="label">Avg p95</div>
+                <div class="value">
+                    <span th:text="${dashboard.runCount > 0 ? #numbers.formatDecimal(dashboard.avgP95Ms, 1, 1) : '—'}">—</span><small th:if="${dashboard.runCount > 0}">ms</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- featured: latest test charts -->
+        <div class="panel latest" th:if="${not #lists.isEmpty(dashboard.recentRuns)}"
+             th:with="latest=${dashboard.recentRuns[0]}"
+             th:attr="data-chart-id=${latest.chartId}">
+            <div class="panel-head">
+                <div class="latest-title">
+                    <h2>Latest test</h2>
+                    <div class="latest-endpoint">
+                        <span class="method-badge"
+                              th:with="m=${latest.httpMethod}"
+                              th:style="${
+                                  m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
+                                  (m == 'PUT' ? 'background:#fdf1dd;color:#a6710a' :
+                                  (m == 'PATCH' ? 'background:#dff4f3;color:#0f8a80' :
+                                  (m == 'DELETE' ? 'background:#fde8e8;color:#c0392b' :
+                                  ((m == 'HEAD' or m == 'OPTIONS') ? 'background:#eef1f6;color:#586274' :
+                                  'background:#e3f4ea;color:#1f8a4c'))))
+                              }"
+                              th:text="${latest.httpMethod}">GET</span>
+                        <span class="ep-url" th:text="${latest.endpoint}" th:title="${latest.endpoint}">http://localhost:8080/v1/path</span>
+                    </div>
+                    <div class="latest-sub">
+                        <b th:text="${latest.targetName}">Target</b>
+                        <span> · </span><span th:text="${latest.projectName}">Project</span>
+                        <span> · </span><span th:text="${latest.configName}">Config</span>
+                        <span> · </span><span th:text="${#temporals.format(latest.createdAt, 'MMM d, HH:mm')}">Mar 3, 14:20</span>
+                    </div>
+                </div>
+                <div class="latest-badges">
+                    <span class="chip"><span th:text="${#numbers.formatDecimal(latest.requestsPerSec, 1, 1)}">0</span> <small>req/s</small></span>
+                    <span class="chip"><span th:text="${#numbers.formatDecimal(latest.p95Ms, 1, 1)}">0</span> <small>ms p95</small></span>
+                    <span class="chip"><span th:text="${#numbers.formatDecimal(latest.successRate * 100, 1, 1)} + '%'">100%</span> <small>ok</small></span>
+                    <a th:href="@{/projects/{id}(id=${latest.projectId})}" class="viewall" style="margin-left:2px;">Open →</a>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div>
+                    <div class="chart-title">Latency distribution</div>
+                    <div class="chart-box"><canvas id="ov-histogram"></canvas></div>
+                </div>
+                <div>
+                    <div class="chart-title">Percentiles</div>
+                    <div class="chart-box"><canvas id="ov-percentiles"></canvas></div>
+                </div>
+                <div>
+                    <div class="chart-title">Status</div>
+                    <div class="donut-box"><canvas id="ov-donut"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cols">
+
+            <!-- recent runs feed -->
+            <div class="panel">
+                <div class="panel-head">
+                    <h2>Recent runs</h2>
+                </div>
+
+                <div class="empty" th:if="${#lists.isEmpty(dashboard.recentRuns)}">
+                    No runs yet — open a target and run a load test to see results here.
+                </div>
+
+                <a th:each="run : ${dashboard.recentRuns}" class="run"
+                   th:href="@{/projects/{id}(id=${run.projectId})}">
+                    <div class="run-main">
+                        <div class="run-target" th:text="${run.targetName}">Target name</div>
+                        <div class="run-sub">
+                            <span th:text="${run.projectName}">Project</span>
+                            <span> · </span>
+                            <span th:text="${run.configName}">Config</span>
+                        </div>
+                    </div>
+                    <div class="run-metrics">
+                        <div class="metric hide-sm">
+                            <div class="m-val" th:text="${#numbers.formatDecimal(run.requestsPerSec, 1, 1)}">0.0</div>
+                            <div class="m-lab">req/s</div>
+                        </div>
+                        <div class="metric hide-sm">
+                            <div class="m-val" th:text="${#numbers.formatDecimal(run.p95Ms, 1, 1)} + ' ms'">0 ms</div>
+                            <div class="m-lab">p95</div>
+                        </div>
+                        <span class="badge"
+                              th:classappend="${run.successRate >= 0.99 ? 'ok' : (run.successRate >= 0.9 ? 'warn' : 'bad')}"
+                              th:text="${#numbers.formatDecimal(run.successRate * 100, 1, 1)} + '%'">100%</span>
+                    </div>
+                    <div class="run-time"
+                         th:text="${#temporals.format(run.createdAt, 'MMM d, HH:mm')}">Mar 3, 14:20</div>
+                </a>
+            </div>
+
+            <!-- project rollup -->
+            <div class="panel">
+                <div class="panel-head">
+                    <h2>Latest projects</h2>
+                    <a th:href="@{/projects}" class="viewall">View all →</a>
+                </div>
+
+                <div class="empty" th:if="${#lists.isEmpty(dashboard.projects)}">
+                    No projects yet.
+                    <a th:href="@{/projects/new}">Create your first one</a>.
+                </div>
+
+                <a th:each="p : ${dashboard.projects}" class="proj"
+                   th:href="@{/projects/{id}(id=${p.id})}">
+                    <div class="proj-logo"><img src="/assets/wolfy.png?v=2" alt=""></div>
+                    <div class="proj-main">
+                        <div class="proj-name" th:text="${p.name}">Project name</div>
+                        <div class="proj-sub">
+                            Created <span th:text="${#temporals.format(p.createdAt, 'MMM d, yyyy')}">Mar 3, 2026</span>
+                            <span> · </span><span th:text="${p.runCount} + (${p.runCount} == 1 ? ' run' : ' runs')">0 runs</span>
+                        </div>
+                    </div>
+                    <div class="proj-rps" th:if="${p.runCount > 0}">
+                        <div class="v" th:text="${#numbers.formatDecimal(p.bestRps, 1, 1)}">0.0</div>
+                        <div class="l">best r/s</div>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- render the newest run's charts from its stored result -->
+<script th:inline="none">
+/*<![CDATA[*/
+(function () {
+    const panel = document.querySelector('.latest[data-chart-id]');
+    if (!panel || typeof Chart === 'undefined') return;
+    const chartId = panel.getAttribute('data-chart-id');
+
+    const BRAND = { navy: '#0e2340', blue: '#5e82ad', blueSoft: 'rgba(94,130,173,.18)',
+                    green: '#1f8a4c', red: '#c0392b', grid: '#eef2f7', axis: '#93a1b5' };
+    Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = BRAND.axis;
+
+    // Response-time histogram: bucket boundary (seconds) -> request count.
+    function drawHistogram(hist) {
+        const el = document.getElementById('ov-histogram');
+        const entries = Object.entries(hist || {});
+        if (!el || !entries.length) return;
+        const labels = entries.map(([sec]) => (parseFloat(sec) * 1000).toFixed(0));
+        const data = entries.map(([, count]) => count);
+        new Chart(el.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ data, backgroundColor: BRAND.blue, borderRadius: 4,
+                    hoverBackgroundColor: BRAND.navy, maxBarThickness: 46 }] },
+            options: { responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { title: (i) => `~${i[0].label} ms`, label: (i) => `${i.raw} requests` } } },
+                scales: {
+                    x: { title: { display: true, text: 'latency (ms)', color: BRAND.axis },
+                         grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                    y: { title: { display: true, text: 'requests', color: BRAND.axis },
+                         beginAtZero: true, grid: { color: BRAND.grid }, ticks: { precision: 0 } } } }
+        });
+    }
+
+    // Percentile curve p50..p99.99, in milliseconds.
+    function drawPercentiles(p) {
+        const el = document.getElementById('ov-percentiles');
+        if (!el || !p) return;
+        const pts = [['p50', p.p50], ['p75', p.p75], ['p90', p.p90], ['p95', p.p95],
+                     ['p99', p.p99], ['p99.9', p['p99.9']], ['p99.99', p['p99.99']]].filter(([, v]) => v != null);
+        if (!pts.length) return;
+        new Chart(el.getContext('2d'), {
+            type: 'line',
+            data: { labels: pts.map((x) => x[0]),
+                    datasets: [{ data: pts.map((x) => x[1] * 1000), borderColor: BRAND.navy,
+                        backgroundColor: BRAND.blueSoft, fill: true, tension: .3,
+                        pointBackgroundColor: BRAND.blue, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: (i) => `${i.label}: ${i.raw.toFixed(1)} ms` } } },
+                scales: { x: { grid: { display: false } },
+                    y: { title: { display: true, text: 'latency (ms)', color: BRAND.axis },
+                         beginAtZero: true, grid: { color: BRAND.grid } } } }
+        });
+    }
+
+    // Success/error donut.
+    function drawDonut(success, failed) {
+        const el = document.getElementById('ov-donut');
+        if (!el) return;
+        new Chart(el.getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['Success', 'Failed'],
+                    datasets: [{ data: [success, failed], backgroundColor: [BRAND.green, BRAND.red],
+                        borderWidth: 0, hoverOffset: 6 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '66%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14 } },
+                    tooltip: { callbacks: { label: (i) => `${i.label}: ${i.raw}` } } } }
+        });
+    }
+
+    fetch(`/api/charts/${chartId}`)
+        .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+        .then((result) => {
+            // 2xx / total, matching the detail page's donut (oha counts any HTTP response as success).
+            const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
+            const failed = Object.values(result.errorDistribution || {}).reduce((a, b) => a + b, 0)
+                + Object.entries(result.statusCodeDistribution || {})
+                    .filter(([code]) => !/^2/.test(code)).reduce((a, [, c]) => a + c, 0);
+            const success = Math.max(0, total - failed);
+            drawHistogram(result.responseTimeHistogram);
+            drawPercentiles(result.latencyPercentiles);
+            drawDonut(success, failed);
+        })
+        .catch(() => {
+            panel.querySelector('.charts-grid').innerHTML =
+                '<div class="empty" style="grid-column:1/-1;">Couldn\'t load the latest run\'s charts.</div>';
+        });
+})();
+/*]]>*/
+</script>
+</body>
+</html>

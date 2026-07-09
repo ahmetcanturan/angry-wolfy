@@ -24,29 +24,56 @@
 
         /* top nav — shared with list & detail pages */
         .topnav {
-            height: 60px; flex-shrink: 0; background: #0e2340;
+            height: 64px; flex-shrink: 0;
+            background: linear-gradient(180deg, #143059, #0e2340 72%);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+            box-shadow: 0 2px 14px -6px rgba(6,16,34,.6);
             display: flex; align-items: center; justify-content: space-between; padding: 0 30px;
+            position: sticky; top: 0; z-index: 30;
         }
-        .topnav-left { display: flex; align-items: center; gap: 36px; }
-        .brand { display: flex; align-items: center; gap: 10px; }
-        .brand img { width: 30px; height: 30px; display: block; }
-        .brand span { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
-        .navlinks { display: flex; gap: 4px; }
-        .navlinks span, .navlinks a {
-            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 7px 12px;
+        .topnav-left { display: flex; align-items: center; gap: 34px; }
+        .brand { display: flex; align-items: center; gap: 11px; }
+        .brand-logo {
+            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(130% 130% at 30% 15%, rgba(105,150,190,.28), rgba(105,150,190,.05));
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+            transition: box-shadow .15s ease;
         }
-        .navlinks a.active {
-            font-weight: 700; color: #fff; padding: 7px 14px;
-            background: rgba(255,255,255,.1); border-radius: 9px;
+        .brand:hover .brand-logo { box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+        .brand-logo img { width: 30px; height: 30px; display: block; }
+        .brand-text { display: flex; flex-direction: column; gap: 3px; line-height: 1.05; }
+        .brand-text b { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+        .brand-text small {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .16em;
+            text-transform: uppercase; color: #6a8cb5;
         }
+        .navlinks { display: flex; align-items: center; gap: 2px; }
+        .navlinks a, .navlinks span {
+            font-size: 14px; font-weight: 600; color: #8ea3c4; padding: 8px 13px;
+            border-radius: 9px; transition: color .12s ease, background .12s ease;
+        }
+        .navlinks a:not(.active):hover { color: #e4ecf7; background: rgba(255,255,255,.07); }
+        .navlinks a.active { font-weight: 700; color: #fff; background: rgba(255,255,255,.12); }
+        .navlinks span { color: #55709b; cursor: default; }
         .selfhosted {
             display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
-            color: #6a8cb5; font-family: 'JetBrains Mono', monospace;
+            color: #7f9ac0; font-family: 'JetBrains Mono', monospace;
+            padding: 6px 13px; border-radius: 999px;
+            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07);
         }
         .selfhosted .dot {
             width: 8px; height: 8px; border-radius: 50%; background: #3ad07f;
             box-shadow: 0 0 0 3px rgba(58,208,127,.2);
         }
+        .topnav-right { display: flex; align-items: center; gap: 14px; }
+        .gh-link {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 9px; color: #8ea3c4;
+            transition: color .12s ease, background .12s ease;
+        }
+        .gh-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+        .gh-link svg { width: 20px; height: 20px; display: block; fill: currentColor; }
 
         /* page band */
         .band { background: #fff; border-bottom: 1px solid #e6ebf2; }
@@ -123,18 +150,24 @@
     <!-- top nav -->
     <header class="topnav">
         <div class="topnav-left">
-            <div class="brand">
-                <img src="/assets/wolfy.png" alt="Angrywolfy">
-                <span>Angrywolfy</span>
-            </div>
+            <a th:href="@{/projects}" class="brand">
+                <span class="brand-logo"><img src="/assets/wolfy.png?v=2" alt="Angrywolfy"></span>
+                <span class="brand-text"><b>Angrywolfy</b><small>Load Testing</small></span>
+            </a>
             <nav class="navlinks">
-                <span>Overview</span>
+                <a th:href="@{/overview}">Overview</a>
                 <a th:href="@{/projects}" class="active">Projects</a>
-                <span>Test Runs</span>
-                <span>Reports</span>
+                <span title="Coming soon">Test Runs</span>
+                <span title="Coming soon">Reports</span>
             </nav>
         </div>
-        <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+        <div class="topnav-right">
+            <div class="selfhosted"><span class="dot"></span>self-hosted</div>
+            <a class="gh-link" href="https://github.com/ahmetcanturan/angry-wolfy"
+               target="_blank" rel="noopener" title="View source on GitHub" aria-label="View source on GitHub">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.05-.02-2.06-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.41 1.02.01 2.04.14 3 .41 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.56 22.3 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z"/></svg>
+            </a>
+        </div>
     </header>
 
     <!-- page band -->
@@ -146,7 +179,7 @@
                 <span class="current" th:text="${projectId} != null ? 'Edit' : 'New project'">New project</span>
             </div>
             <div class="band-head">
-                <div class="logo-tile"><img src="/assets/wolfy.png" alt=""></div>
+                <div class="logo-tile"><img src="/assets/wolfy.png?v=2" alt=""></div>
                 <div>
                     <h1 th:text="${projectId} != null ? 'Edit project' : 'New project'">New project</h1>
                     <p class="sub" th:text="${projectId != null
