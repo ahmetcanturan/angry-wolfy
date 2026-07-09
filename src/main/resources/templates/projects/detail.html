@@ -355,6 +355,97 @@
         }
         .btn-run:disabled, .btn-small:disabled { opacity: .5; cursor: not-allowed; }
 
+        /* ---- expanding tabbed panel (Charts | Request config) ---- */
+        .target-panel { border-top: 1px solid #eef2f7; background: #fbfcfe; }
+        .target-panel[hidden] { display: none; }
+        .panel-tabbar {
+            display: flex; align-items: center; gap: 4px; padding: 12px 20px 0;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .panel-tab {
+            font-family: inherit; cursor: pointer; border: none; background: transparent;
+            font-size: 13px; font-weight: 700; color: #7c8aa0; padding: 9px 14px 12px;
+            border-bottom: 2px solid transparent; margin-bottom: -1px;
+            display: inline-flex; align-items: center; gap: 7px;
+        }
+        .panel-tab:hover { color: #3d5580; }
+        .panel-tab.active { color: #12233f; border-bottom-color: #5e82ad; }
+        .panel-tab .tab-count {
+            font-size: 10px; font-weight: 800; color: #7c8aa0; background: #eef2f7;
+            padding: 2px 6px; border-radius: 20px; font-family: 'JetBrains Mono', monospace;
+        }
+        .panel-pane[hidden] { display: none; }
+
+        /* ---- request-config tab ---- */
+        .reqcfg { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
+        .reqcfg-endpoint { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .rq-field { display: flex; flex-direction: column; gap: 6px; }
+        .rq-label {
+            font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #93a1b5;
+        }
+        .rq-hint { font-size: 11.5px; color: #93a1b5; font-weight: 500; text-transform: none; letter-spacing: 0; }
+        .rq-select, .rq-input {
+            border: 1px solid #dbe3ee; border-radius: 9px; padding: 9px 11px; font-size: 13px;
+            color: #1a2740; outline: none; background: #fff; font-family: 'JetBrains Mono', monospace;
+        }
+        .rq-select:focus, .rq-input:focus { border-color: #6a8cb5; box-shadow: 0 0 0 3px rgba(106,140,181,.15); }
+        .rq-select { font-weight: 800; min-width: 108px; }
+        .rq-input.path { flex: 1; min-width: 220px; }
+        .rq-input.full { width: 100%; }
+        .rq-resolved {
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5f6f88; word-break: break-all;
+            background: #f2f6fc; border: 1px solid #e2ebf6; border-radius: 9px; padding: 9px 12px;
+        }
+        .rq-resolved .lbl { color: #93a1b5; font-weight: 700; }
+        .rq-resolved .ovr { color: #a6710a; font-weight: 700; }
+
+        .reqcfg-subtabs { display: inline-flex; background: #eef2f7; padding: 3px; border-radius: 9px; gap: 2px; }
+        .reqcfg-subtab {
+            font-family: inherit; cursor: pointer; border: none; font-size: 12.5px; font-weight: 700;
+            padding: 6px 14px; border-radius: 7px; background: transparent; color: #5f6f88;
+        }
+        .reqcfg-subtab.active { background: #fff; color: #12233f; box-shadow: 0 2px 6px -2px rgba(14,35,64,.25); }
+        .reqcfg-subpane[hidden] { display: none; }
+
+        /* headers editor */
+        .hdr-list { display: flex; flex-direction: column; gap: 8px; }
+        .hdr-row { display: flex; gap: 8px; align-items: center; }
+        .hdr-row .rq-input { flex: 1; min-width: 0; font-size: 12.5px; }
+        .hdr-del {
+            width: 32px; height: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid #f4cfcb;
+            background: #fde8e8; color: #c0392b; font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+        .hdr-del:hover { background: #f9d5d5; }
+        .hdr-add {
+            align-self: flex-start; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #5e82ad;
+            background: #eaf0f8; border: 1px dashed #b9cbe2; padding: 8px 13px; border-radius: 9px; cursor: pointer;
+        }
+        .hdr-empty { font-size: 12.5px; color: #93a1b5; font-style: italic; }
+        .reqcfg-body-area {
+            width: 100%; min-height: 150px; resize: vertical; border: 1px solid #dbe3ee; border-radius: 11px;
+            padding: 11px 13px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #1a2740;
+            outline: none; line-height: 1.5;
+        }
+        .reqcfg-body-area:focus { border-color: #6a8cb5; box-shadow: 0 0 0 3px rgba(106,140,181,.15); }
+        .reqcfg-foot {
+            display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+            border-top: 1px solid #eef2f7; padding-top: 16px; flex-wrap: wrap;
+        }
+        .reqcfg-save {
+            font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; background: #0e2340;
+            border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;
+        }
+        .reqcfg-save:disabled { opacity: .5; cursor: not-allowed; }
+        .reqcfg-msg { font-size: 12.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+        .reqcfg-msg.ok { color: #1f7a4d; } .reqcfg-msg.err { color: #c0392b; }
+
+        /* per-card environment selector in the panel */
+        .panel-env {
+            display: flex; align-items: center; gap: 8px; padding: 12px 20px 0; flex-wrap: wrap;
+        }
+        .panel-env .rq-label { margin: 0; }
+        .panel-env .rq-select { font-weight: 700; font-family: inherit; }
+
         /* summary is hidden — the whole target row now toggles the panel */
         details.stats-panel > summary { display: none; }
         .stats-heading {
@@ -364,9 +455,6 @@
         .stat-tile { background: #fff; border: 1px solid #e6ebf2; border-radius: 12px; padding: 14px; }
         .stat-tile .label { font-size: 11px; font-weight: 700; color: #93a1b5; letter-spacing: .04em; }
         .stat-tile .value { font-size: 22px; font-weight: 800; color: #12233f; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
-        .no-runs-msg {
-            font-size: 13px; color: #7c8aa0; font-style: italic; margin-top: 8px;
-        }
 
         /* ---- results dashboard ---- */
         .dash { border-top: 1px solid #eef2f7; background: #fbfcfe; padding: 22px 24px; }
@@ -397,20 +485,32 @@
         }
         .png-btn:hover { background: #dbe4f1; color: #1e3a63; }
 
-        /* export bar */
+        /* export dropdown (right-aligned) */
         .dash-export {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            display: flex; align-items: center; justify-content: flex-end;
             padding-bottom: 4px; border-bottom: 1px solid #eef2f7; margin-bottom: 4px;
         }
-        .export-label {
-            font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-            color: #93a1b5; margin-right: 2px;
-        }
-        .export-btn {
+        .export-menu { position: relative; }
+        .export-toggle {
+            display: inline-flex; align-items: center; gap: 8px;
             font-family: inherit; font-size: 12.5px; font-weight: 700; color: #3d5580;
-            background: #fff; border: 1px solid #dbe3ee; padding: 6px 13px; border-radius: 8px; cursor: pointer;
+            background: #fff; border: 1px solid #dbe3ee; padding: 7px 13px; border-radius: 9px; cursor: pointer;
         }
-        .export-btn:hover { background: #eef2f8; border-color: #b9cbe2; }
+        .export-toggle:hover { background: #eef2f8; border-color: #b9cbe2; }
+        .export-toggle .caret { font-size: 10px; color: #93a1b5; transition: transform .15s ease; }
+        .export-menu.open .export-toggle { background: #eef2f8; border-color: #b9cbe2; }
+        .export-menu.open .export-toggle .caret { transform: rotate(180deg); }
+        .export-dropdown {
+            position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; min-width: 150px;
+            background: #fff; border: 1px solid #e6ebf2; border-radius: 11px; padding: 6px;
+            box-shadow: 0 14px 32px -12px rgba(14,35,64,.35); display: flex; flex-direction: column; gap: 2px;
+        }
+        .export-dropdown[hidden] { display: none; }
+        .export-option {
+            font-family: inherit; font-size: 13px; font-weight: 600; color: #3d5580; text-align: left;
+            background: transparent; border: none; padding: 8px 11px; border-radius: 8px; cursor: pointer;
+        }
+        .export-option:hover { background: #eef2f8; color: #12233f; }
         .chart-box { height: 210px; position: relative; }
         .donut-box { height: 190px; position: relative; display: flex; align-items: center; justify-content: center; }
         .chart-sub { font-size: 11.5px; color: #93a1b5; margin-top: 10px; line-height: 1.4; }
@@ -451,52 +551,7 @@
             .dash-outcome { grid-template-columns: 1fr; }
         }
 
-        /* run test section */
-        details.run-test {
-            margin-top: 30px; background: #fff; border: 1px solid #e6ebf2; border-radius: 15px; overflow: hidden;
-        }
-        details.run-test > summary {
-            cursor: pointer; list-style: none; padding: 18px 22px; font-size: 15px; font-weight: 800; color: #12233f;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        details.run-test > summary::-webkit-details-marker { display: none; }
-        details.run-test > summary::marker { content: ""; }
-        details.run-test > summary .sub { font-size: 12.5px; font-weight: 500; color: #8a97ab; margin-top: 2px; }
-        .run-test-body { padding: 4px 22px 22px; display: flex; flex-direction: column; gap: 20px; }
-        .picker-heading {
-            font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #93a1b5; margin-bottom: 10px;
-        }
-        .radio-list { display: flex; flex-direction: column; gap: 8px; }
-        .radio-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 13px;
-            border-radius: 11px; border: 1.5px solid #e6ebf2; background: #fff; cursor: pointer;
-        }
-        .radio-row input[type="radio"] { margin-right: 9px; }
-        .radio-row-left { display: flex; align-items: center; gap: 9px; }
-        .radio-row .url { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #7c8aa0; }
-        .duration-group { display: flex; gap: 8px; flex-wrap: wrap; }
-        .duration-pill {
-            font-family: inherit; cursor: pointer; font-size: 13px; font-weight: 700; padding: 9px 18px;
-            border-radius: 9px; border: 1.5px solid #e6ebf2; background: #fff; color: #5f6f88;
-            display: inline-flex; align-items: center; gap: 6px;
-        }
-        .run-footer {
-            padding: 18px 0 0; border-top: 1px solid #eef2f7; margin-top: 4px;
-            display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;
-        }
-        .btn-launch-disabled {
-            display: inline-flex; align-items: center; gap: 9px; background: #b8c4d6; color: #fff;
-            border: none; font-family: inherit; font-size: 14px; font-weight: 700; padding: 12px 22px;
-            border-radius: 11px; cursor: not-allowed;
-        }
         .btn-dark:disabled { opacity: .5; cursor: not-allowed; }
-        .run-result {
-            font-size: 13px; padding: 13px 15px; border-radius: 11px; font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .run-result.running { background: #eef2f8; color: #5e82ad; }
-        .run-result.ok { background: #e9f6ef; color: #1f7a4d; border: 1px solid #cdeadb; }
-        .run-result.error { background: #fdeceb; color: #c0392b; border: 1px solid #f4cfcb; }
 
         /* ---- Import button + modal ---- */
         .section-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -803,8 +858,25 @@
                     <div class="check-body js-check-body"></div>
                 </div>
 
-                <details class="stats-panel js-stats-panel">
-                    <summary>Show latest run stats</summary>
+                <div class="target-panel js-target-panel" hidden>
+                    <!-- tab bar: Charts (default) | Request config -->
+                    <div class="panel-tabbar">
+                        <button type="button" class="panel-tab active js-panel-tab" data-pane="charts">Charts</button>
+                        <button type="button" class="panel-tab js-panel-tab" data-pane="reqcfg">Request config</button>
+                    </div>
+
+                    <!-- per-card environment selector (drives Check / Run / history) -->
+                    <div class="panel-env" th:if="${!#lists.isEmpty(configs)}">
+                        <span class="rq-label">Environment</span>
+                        <select class="rq-select js-panel-env">
+                            <option th:each="c, iter : ${configs}" th:value="${c.id}"
+                                    th:text="${c.name} + ' — ' + ${c.baseUrl}"
+                                    th:selected="${activeConfigId != null ? activeConfigId.equals(c.id) : iter.first}">Env</option>
+                        </select>
+                    </div>
+
+                    <!-- Charts pane (default) -->
+                    <div class="panel-pane js-pane-charts">
                     <div class="dash">
                         <!-- empty state before any run -->
                         <div class="dash-empty js-dash-empty">No runs yet — trigger a load test to see results here.</div>
@@ -817,12 +889,19 @@
                                 <div class="history-list js-history"></div>
                             </div>
 
-                            <!-- export bar -->
+                            <!-- export dropdown (right-aligned) -->
                             <div class="dash-export">
-                                <span class="export-label">Export</span>
-                                <button type="button" class="export-btn js-export" data-fmt="json">JSON</button>
-                                <button type="button" class="export-btn js-export" data-fmt="csv">CSV</button>
-                                <button type="button" class="export-btn js-export" data-fmt="md">Markdown</button>
+                                <div class="export-menu js-export-menu">
+                                    <button type="button" class="export-toggle js-export-toggle"
+                                            aria-haspopup="true" aria-expanded="false">
+                                        <span>⤓ Export</span><span class="caret">▾</span>
+                                    </button>
+                                    <div class="export-dropdown js-export-dropdown" hidden>
+                                        <button type="button" class="export-option js-export" data-fmt="json">JSON</button>
+                                        <button type="button" class="export-option js-export" data-fmt="csv">CSV</button>
+                                        <button type="button" class="export-option js-export" data-fmt="md">Markdown</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- headline: hero throughput + key numbers -->
@@ -890,7 +969,68 @@
                             </div>
                         </div>
                     </div>
-                </details>
+                    </div><!-- /charts pane -->
+
+                    <!-- Request config pane -->
+                    <div class="panel-pane js-pane-reqcfg" hidden>
+                        <div class="reqcfg js-reqcfg" th:attr="data-target-id=${t.id}">
+                            <!-- endpoint: method + path, plus per-target base URL override -->
+                            <div class="reqcfg-endpoint">
+                                <div class="rq-field">
+                                    <label class="rq-label">Method</label>
+                                    <select class="rq-select js-rq-method">
+                                        <option th:each="m : ${T(com.buddywolfy.angrywolfy.enums.HttpMethod).values()}"
+                                                th:value="${m}" th:text="${m}"
+                                                th:selected="${t.method != null and t.method.equals(m)}">GET</option>
+                                    </select>
+                                </div>
+                                <div class="rq-field" style="flex:1;min-width:220px;">
+                                    <label class="rq-label">Path</label>
+                                    <input type="text" class="rq-input path js-rq-path"
+                                           th:value="${t.path}" placeholder="/v1/resource"/>
+                                </div>
+                            </div>
+                            <div class="rq-field">
+                                <label class="rq-label">Base URL override
+                                    <span class="rq-hint">— optional; overrides the environment's base URL for this target only</span></label>
+                                <input type="text" class="rq-input full js-rq-baseurl"
+                                       th:value="${t.baseUrlOverride}" placeholder="e.g. https://staging.example.com (leave blank to use the environment)"/>
+                            </div>
+                            <div class="rq-resolved js-rq-resolved"></div>
+
+                            <!-- Headers / Body sub-tabs -->
+                            <div class="reqcfg-subtabs">
+                                <button type="button" class="reqcfg-subtab active js-rq-subtab" data-sub="headers">Headers</button>
+                                <button type="button" class="reqcfg-subtab js-rq-subtab" data-sub="body">Body</button>
+                            </div>
+
+                            <div class="reqcfg-subpane js-rq-sub-headers">
+                                <div class="hdr-list js-hdr-list">
+                                    <div class="hdr-row" th:each="h : ${t.customHeaders}">
+                                        <input type="text" class="rq-input js-hdr-key" th:value="${h.key}" placeholder="Header name"/>
+                                        <input type="text" class="rq-input js-hdr-val" th:value="${h.value}" placeholder="Value"/>
+                                        <button type="button" class="hdr-del js-hdr-del" title="Remove header">✕</button>
+                                    </div>
+                                    <div class="hdr-empty js-hdr-empty"
+                                         th:if="${#maps.isEmpty(t.customHeaders)}">No target-specific headers. Environment headers still apply.</div>
+                                </div>
+                                <button type="button" class="hdr-add js-hdr-add" style="margin-top:10px;">＋ Add header</button>
+                            </div>
+
+                            <div class="reqcfg-subpane js-rq-sub-body" hidden>
+                                <label class="rq-label" style="display:block;margin-bottom:8px;">Request body</label>
+                                <textarea class="reqcfg-body-area js-rq-body"
+                                          placeholder='{ "example": "payload" }' spellcheck="false"
+                                          th:text="${t.body}"></textarea>
+                            </div>
+
+                            <div class="reqcfg-foot">
+                                <span class="reqcfg-msg js-rq-msg"></span>
+                                <button type="button" class="reqcfg-save js-rq-save">Save changes</button>
+                            </div>
+                        </div>
+                    </div><!-- /request config pane -->
+                </div><!-- /target-panel -->
               </div>
               <div class="target-outer-actions">
                   <a th:href="@{/targets/{id}/edit(id=${t.id})}" class="target-icon-btn edit"
@@ -903,74 +1043,6 @@
             </div>
         </div>
 
-        <!-- run load test (static, zero JS, no backend yet) -->
-        <details class="run-test">
-            <summary>
-                <div>
-                    <div>Run load test</div>
-                    <div class="sub">Combine an environment with an endpoint.</div>
-                </div>
-            </summary>
-            <div class="run-test-body">
-                <div th:if="${!#lists.isEmpty(configs)}">
-                    <div class="picker-heading">Environment</div>
-                    <div class="radio-list">
-                        <label class="radio-row" th:each="c, iter : ${configs}">
-                            <div class="radio-row-left">
-                                <input type="radio" name="runEnv" th:value="${c.id}" th:checked="${iter.first}"/>
-                                <span th:text="${c.name}">Env name</span>
-                                <span class="badge"
-                                      th:with="bgfg=${c.type != null ? c.type.name() : 'LOCAL'}"
-                                      th:style="${
-                                          bgfg == 'DEVELOPMENT' ? 'background:#e4eefb;color:#1e5bb8' :
-                                          (bgfg == 'STAGING' ? 'background:#fdf1dd;color:#a6710a' :
-                                          (bgfg == 'PREPRODUCTION' ? 'background:#efe8fb;color:#6b3fc0' :
-                                          (bgfg == 'PRODUCTION' ? 'background:#fde8e8;color:#c0392b' :
-                                          'background:#eef1f6;color:#586274')))
-                                      }"
-                                      th:text="${c.type}">LOCAL</span>
-                            </div>
-                            <span class="url" th:text="${c.baseUrl}">http://localhost:8080</span>
-                        </label>
-                    </div>
-                </div>
-                <div th:if="${#lists.isEmpty(configs)}" class="no-runs-msg">No environments yet — create one above first.</div>
-
-                <div th:if="${!#lists.isEmpty(targets)}">
-                    <div class="picker-heading">Target</div>
-                    <div class="radio-list">
-                        <label class="radio-row" th:each="t, iter : ${targets}">
-                            <div class="radio-row-left">
-                                <input type="radio" name="runTarget" th:value="${t.id}" th:checked="${iter.first}"/>
-                                <span th:text="${t.name}">Target name</span>
-                            </div>
-                            <span class="url" th:text="${t.path}">/v1/path</span>
-                        </label>
-                    </div>
-                </div>
-                <div th:if="${#lists.isEmpty(targets)}" class="no-runs-msg">No targets yet — add one above first.</div>
-
-                <div>
-                    <div class="picker-heading">Duration</div>
-                    <div class="duration-group">
-                        <label class="duration-pill"><input type="radio" name="runDuration" value="30" checked/> 30s</label>
-                        <label class="duration-pill"><input type="radio" name="runDuration" value="60"/> 60s</label>
-                        <label class="duration-pill"><input type="radio" name="runDuration" value="120"/> 2m</label>
-                        <label class="duration-pill"><input type="radio" name="runDuration" value="300"/> 5m</label>
-                    </div>
-                </div>
-
-                <div id="runResult" class="run-result" hidden></div>
-
-                <div class="run-footer">
-                    <button type="button" id="launchTest" class="btn-dark"
-                            th:disabled="${#lists.isEmpty(configs) or #lists.isEmpty(targets)}">
-                        <span class="play"></span>
-                        <span class="launch-label">Launch test</span>
-                    </button>
-                </div>
-            </div>
-        </details>
     </div>
 </div>
 
@@ -1035,21 +1107,11 @@
         return (b / 1048576).toFixed(2) + ' MB';
     };
 
-    // Reads whichever env radio is selected in the run-test picker; falls
-    // back to the first available env if the picker isn't rendered.
-    function selectedConfigId() {
-        const checked = document.querySelector('input[name="runEnv"]:checked');
-        if (checked) return checked.value;
-        const first = document.querySelector('input[name="runEnv"]');
-        return first ? first.value : null;
-    }
-
     // Fires the run. Sends our runId so a concurrent DELETE can cancel it, and
     // wires an AbortController so Cancel also stops the browser waiting.
-    // configId is explicit for the per-row Run (the active environment); the
-    // launch-test section omits it and falls back to its own env picker.
+    // configId is the environment picked in the target card's panel selector.
     async function runLoadTest(targetId, options, runId, signal, configId) {
-        const cfg = configId || selectedConfigId();
+        const cfg = configId;
         if (!cfg) {
             throw new Error('Pick an environment first.');
         }
@@ -1236,7 +1298,7 @@
 
         card.querySelector('.js-dash-empty').hidden = true;
         card.querySelector('.js-dash-body').hidden = false;
-        if (openPanel) { card.querySelector('.js-stats-panel').open = true; card.classList.add('open'); }
+        if (openPanel) { openTargetPanel(card, 'charts'); }
     }
 
     // ---- export ---------------------------------------------------------
@@ -1345,10 +1407,37 @@
         download(`${exportName(card)}-${chartName}.png`, out.toDataURL('image/png'));
     }
 
+    // Close any open export dropdown (optionally all but one).
+    function closeExportMenus(except) {
+        document.querySelectorAll('.js-export-menu.open').forEach((menu) => {
+            if (menu === except) { return; }
+            menu.classList.remove('open');
+            menu.querySelector('.js-export-dropdown').hidden = true;
+            menu.querySelector('.js-export-toggle').setAttribute('aria-expanded', 'false');
+        });
+    }
+    // Clicking outside closes the menu.
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.js-export-menu')) { closeExportMenus(); }
+    });
+
     // Wire export controls on every card.
     document.querySelectorAll('.target-card').forEach((card) => {
+        // Toggle the export dropdown open/closed.
+        card.querySelectorAll('.js-export-toggle').forEach((toggle) => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const menu = toggle.closest('.js-export-menu');
+                const open = !menu.classList.contains('open');
+                closeExportMenus(open ? menu : null);
+                menu.classList.toggle('open', open);
+                menu.querySelector('.js-export-dropdown').hidden = !open;
+                toggle.setAttribute('aria-expanded', String(open));
+            });
+        });
         card.querySelectorAll('.js-export').forEach((btn) => {
             btn.addEventListener('click', () => {
+                closeExportMenus();
                 if (!card._result) { return; }
                 const fmt = btn.getAttribute('data-fmt');
                 if (fmt === 'json') { exportJson(card); }
@@ -1433,17 +1522,208 @@
     // Populate history for every target card as the page loads.
     document.querySelectorAll('.target-card').forEach((card) => loadHistory(card));
 
-    // Whole target row toggles its stats/charts panel — except when the click
-    // lands on an interactive control (Configure, Run, edit, delete, inputs).
+    // ---- tabbed target panel (Charts | Request config) ----------------
+    // Switch which pane is visible and mark the matching tab active.
+    function showPane(card, pane) {
+        card.querySelectorAll('.js-panel-tab').forEach((t) =>
+            t.classList.toggle('active', t.getAttribute('data-pane') === pane));
+        card.querySelector('.js-pane-charts').hidden = (pane !== 'charts');
+        card.querySelector('.js-pane-reqcfg').hidden = (pane !== 'reqcfg');
+    }
+    // Open the panel (optionally jumping to a pane); records open state on the card.
+    function openTargetPanel(card, pane) {
+        const panel = card.querySelector('.js-target-panel');
+        panel.hidden = false;
+        card.classList.add('open');
+        if (pane) { showPane(card, pane); }
+    }
+    function toggleTargetPanel(card) {
+        const panel = card.querySelector('.js-target-panel');
+        const open = panel.hidden;              // hidden now -> we're opening it
+        panel.hidden = !open;
+        card.classList.toggle('open', open);
+    }
+
+    // Whole target row toggles the panel — except when the click lands on an
+    // interactive control (Configure, Run, edit, delete, inputs).
     document.querySelectorAll('.target-card').forEach((card) => {
         const row = card.querySelector('.target-row');
-        const panel = card.querySelector('.js-stats-panel');
         row.addEventListener('click', (e) => {
             if (e.target.closest('button, a, input, select, textarea, form')) { return; }
-            panel.open = !panel.open;
-            card.classList.toggle('open', panel.open);
+            toggleTargetPanel(card);
         });
     });
+
+    // Tab clicks switch panes (and ensure the panel is open).
+    document.querySelectorAll('.js-panel-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const card = tab.closest('.target-card');
+            openTargetPanel(card, tab.getAttribute('data-pane'));
+        });
+    });
+
+    // Per-card environment selector: point Check/Run/history at the chosen config.
+    document.querySelectorAll('.js-panel-env').forEach((sel) => {
+        sel.addEventListener('change', () => {
+            const card = sel.closest('.target-card');
+            const configId = sel.value;
+            const checkBtn = card.querySelector('.js-check-target');
+            const runBtn = card.querySelector('.js-run-target');
+            if (checkBtn) { checkBtn.setAttribute('data-config-id', configId); checkBtn.disabled = !configId; }
+            if (runBtn) {
+                runBtn.setAttribute('data-config-id', configId);
+                const base = sel.options[sel.selectedIndex].text.split(' — ')[1] || '';
+                const path = runBtn.getAttribute('data-target-path') || '';
+                runBtn.setAttribute('data-target-url', base + path);
+            }
+            renderResolvedUrl(card);
+        });
+    });
+
+    // ---- Request config sub-tabs (Headers | Body) ----------------------
+    document.querySelectorAll('.js-rq-subtab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const card = tab.closest('.target-card');
+            const sub = tab.getAttribute('data-sub');
+            card.querySelectorAll('.js-rq-subtab').forEach((t) =>
+                t.classList.toggle('active', t === tab));
+            card.querySelector('.js-rq-sub-headers').hidden = (sub !== 'headers');
+            card.querySelector('.js-rq-sub-body').hidden = (sub !== 'body');
+        });
+    });
+
+    // Live "resolved URL" preview: base (override or env) + path.
+    function selectedEnvBase(card) {
+        const sel = card.querySelector('.js-panel-env');
+        if (!sel || sel.selectedIndex < 0) { return ''; }
+        return (sel.options[sel.selectedIndex].text.split(' — ')[1] || '').replace(/\/+$/, '');
+    }
+    function renderResolvedUrl(card) {
+        const el = card.querySelector('.js-rq-resolved');
+        if (!el) { return; }
+        const override = card.querySelector('.js-rq-baseurl').value.trim().replace(/\/+$/, '');
+        const path = card.querySelector('.js-rq-path').value.trim();
+        const base = override || selectedEnvBase(card);
+        const joined = !path ? base : (path.charAt(0) === '/' ? base + path : base + '/' + path);
+        const src = override ? '<span class="ovr">override</span>' : '<span class="lbl">environment</span>';
+        el.innerHTML = `<span class="lbl">Resolved:</span> ${joined || '—'} &nbsp;·&nbsp; base from ${src}`;
+    }
+
+    // Add / remove header rows in the request-config editor.
+    function addHeaderRow(list, key, val) {
+        const empty = list.querySelector('.js-hdr-empty');
+        if (empty) { empty.remove(); }
+        const row = document.createElement('div');
+        row.className = 'hdr-row';
+        row.innerHTML =
+            '<input type="text" class="rq-input js-hdr-key" placeholder="Header name"/>' +
+            '<input type="text" class="rq-input js-hdr-val" placeholder="Value"/>' +
+            '<button type="button" class="hdr-del js-hdr-del" title="Remove header">✕</button>';
+        row.querySelector('.js-hdr-key').value = key || '';
+        row.querySelector('.js-hdr-val').value = val || '';
+        list.appendChild(row);
+    }
+    document.querySelectorAll('.js-hdr-add').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            addHeaderRow(btn.closest('.js-rq-sub-headers').querySelector('.js-hdr-list'), '', '');
+        });
+    });
+    document.querySelectorAll('.js-hdr-list').forEach((list) => {
+        list.addEventListener('click', (e) => {
+            const del = e.target.closest('.js-hdr-del');
+            if (del) { del.closest('.hdr-row').remove(); }
+        });
+    });
+
+    // Keep the resolved-URL preview fresh as method/path/override change.
+    document.querySelectorAll('.js-reqcfg').forEach((rc) => {
+        const card = rc.closest('.target-card');
+        ['.js-rq-path', '.js-rq-baseurl'].forEach((sel) =>
+            rc.querySelector(sel).addEventListener('input', () => renderResolvedUrl(card)));
+        renderResolvedUrl(card);
+    });
+
+    // Save the request config via PUT /api/targets/{id}. Sends the full target
+    // shape the endpoint expects (name/description/type/notes are unchanged and
+    // read from the row), plus the edited method/path/baseUrlOverride/headers/body.
+    document.querySelectorAll('.js-rq-save').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const card = btn.closest('.target-card');
+            const rc = card.querySelector('.js-reqcfg');
+            const targetId = rc.getAttribute('data-target-id');
+            const msg = card.querySelector('.js-rq-msg');
+            msg.className = 'reqcfg-msg js-rq-msg';
+            msg.textContent = '';
+
+            // Collect edited headers (skip rows with a blank key).
+            const headers = {};
+            rc.querySelectorAll('.js-hdr-list .hdr-row').forEach((row) => {
+                const k = row.querySelector('.js-hdr-key').value.trim();
+                if (k) { headers[k] = row.querySelector('.js-hdr-val').value; }
+            });
+
+            const meta = targetMeta(card);   // name is used elsewhere; grab current target facts
+            const body = {
+                name: meta.name,
+                description: null,
+                path: rc.querySelector('.js-rq-path').value.trim(),
+                baseUrlOverride: rc.querySelector('.js-rq-baseurl').value.trim() || null,
+                method: rc.querySelector('.js-rq-method').value,
+                type: card.querySelector('.type-badge') ? card.querySelector('.type-badge').textContent.trim() : 'REST',
+                customHeaders: headers,
+                body: rc.querySelector('.js-rq-body').value,
+                notes: null
+            };
+
+            const original = btn.textContent;
+            btn.disabled = true; btn.textContent = 'Saving…';
+            try {
+                // Pull the untouched fields (description/notes) from the server first so
+                // the PUT doesn't clobber them; then merge in the edited request config.
+                const cur = await (await fetch(`/api/targets/${targetId}`)).json();
+                body.description = cur.description;
+                body.notes = cur.notes;
+                body.type = cur.type;
+                const res = await fetch(`/api/targets/${targetId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) { throw new Error(data.message || `Save failed (${res.status})`); }
+                msg.className = 'reqcfg-msg js-rq-msg ok';
+                msg.textContent = 'Saved ✓';
+                // Reflect the new method/path in the row header + run/check buttons.
+                applyTargetToRow(card, data);
+            } catch (err) {
+                msg.className = 'reqcfg-msg js-rq-msg err';
+                msg.textContent = 'Failed: ' + err.message;
+            } finally {
+                btn.disabled = false; btn.textContent = original;
+            }
+        });
+    });
+
+    // After a save, update the visible row (method badge, path, run/check data-*).
+    function applyTargetToRow(card, t) {
+        const badge = card.querySelector('.method-badge');
+        if (badge) { badge.textContent = t.method; }
+        const pathEl = card.querySelector('.target-path');
+        if (pathEl) {
+            const prefix = pathEl.querySelector('.prefix');
+            pathEl.innerHTML = '';
+            if (prefix) { pathEl.appendChild(prefix); }
+            pathEl.appendChild(document.createTextNode(t.path));
+        }
+        const runBtn = card.querySelector('.js-run-target');
+        if (runBtn) {
+            runBtn.setAttribute('data-target-method', t.method);
+            runBtn.setAttribute('data-target-path', t.path);
+            const base = t.baseUrlOverride || selectedEnvBase(card);
+            runBtn.setAttribute('data-target-url', (base || '') + t.path);
+        }
+        renderResolvedUrl(card);
+    }
 
     // Configure toggle: show/hide the per-card run-config panel.
     document.querySelectorAll('.js-config-toggle').forEach((btn) => {
@@ -1579,8 +1859,7 @@
                 empty.hidden = false;
                 empty.textContent = msg;
                 card.querySelector('.js-dash-body').hidden = true;
-                card.querySelector('.js-stats-panel').open = true;
-                card.classList.add('open');
+                openTargetPanel(card, 'charts');
             } finally {
                 clearInterval(wolfTimer);
                 hideOverlay(card);
@@ -1756,59 +2035,6 @@
             });
         });
     });
-
-    // Launch-test section: duration-based run, result rendered inline ---
-    const launchBtn = document.getElementById('launchTest');
-    const runResult = document.getElementById('runResult');
-    if (launchBtn) {
-        launchBtn.addEventListener('click', async () => {
-            const target = document.querySelector('input[name="runTarget"]:checked');
-            const duration = document.querySelector('input[name="runDuration"]:checked');
-            if (!target) { return; }
-            const targetId = target.value;
-            const durationSeconds = duration ? parseInt(duration.value, 10) : 30;
-
-            const runId = newRunId();
-            const controller = new AbortController();
-            const label = launchBtn.querySelector('.launch-label');
-            const originalLabel = label.textContent;
-            label.textContent = `Running ${durationSeconds}s test — click to cancel`;
-            runResult.hidden = false;
-            runResult.className = 'run-result running';
-            runResult.textContent = 'Load test in progress…';
-
-            // While running, the launch button doubles as Cancel.
-            const onCancel = (e) => { e.preventDefault(); cancelRun(runId); controller.abort(); };
-            launchBtn.addEventListener('click', onCancel);
-
-            try {
-                const result = await runLoadTest(
-                    targetId, { durationSeconds: durationSeconds, concurrency: 10 }, runId, controller.signal);
-                const s = result.summary;
-                const p = result.latencyPercentiles;
-                const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
-                runResult.className = 'run-result ok';
-                runResult.innerHTML =
-                    `<strong>${num(total)} requests</strong> · ${s.requestsPerSec.toFixed(1)} req/s · ` +
-                    `${pct(s.successRate)} success · p50 ${ms(p.p50)} · p95 ${ms(p.p95)} · p99 ${ms(p.p99)}`;
-
-                // Also update the matching target card if it's on the page.
-                const card = document.querySelector(`.target-card[data-target-id="${targetId}"]`);
-                if (card) { fillPanel(card, result); loadHistory(card); }
-            } catch (err) {
-                if (err.cancelled || err.name === 'AbortError') {
-                    runResult.className = 'run-result running';
-                    runResult.textContent = 'Run cancelled.';
-                } else {
-                    runResult.className = 'run-result error';
-                    runResult.textContent = 'Failed: ' + err.message;
-                }
-            } finally {
-                launchBtn.removeEventListener('click', onCancel);
-                label.textContent = originalLabel;
-            }
-        });
-    }
 
     // ---- Import modal (Postman collection → targets) -------------------
     (function importModal() {

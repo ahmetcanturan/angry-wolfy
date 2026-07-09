@@ -25,9 +25,16 @@ public class TargetService {
     @Transactional
     public Target create(String name, String description, Long projectId, String path, HttpMethod method,
                           TargetType type, Map<String, String> customHeaders, String body, String notes) {
+        return create(name, description, projectId, path, null, method, type, customHeaders, body, notes);
+    }
+
+    @Transactional
+    public Target create(String name, String description, Long projectId, String path, String baseUrlOverride,
+                          HttpMethod method, TargetType type, Map<String, String> customHeaders, String body,
+                          String notes) {
         var project = projectService.getById(projectId);
-        return targetRepository.save(
-                new Target(name, description, project, path, method, type, customHeaders, body, notes));
+        return targetRepository.save(new Target(name, description, project, path, baseUrlOverride, method,
+                type, customHeaders, body, notes));
     }
 
     @Transactional(readOnly = true)
@@ -49,10 +56,18 @@ public class TargetService {
     @Transactional
     public Target update(Long id, String name, String description, String path, HttpMethod method,
                           TargetType type, Map<String, String> customHeaders, String body, String notes) {
+        return update(id, name, description, path, null, method, type, customHeaders, body, notes);
+    }
+
+    @Transactional
+    public Target update(Long id, String name, String description, String path, String baseUrlOverride,
+                          HttpMethod method, TargetType type, Map<String, String> customHeaders, String body,
+                          String notes) {
         Target target = getById(id);
         target.setName(name);
         target.setDescription(description);
         target.setPath(path);
+        target.setBaseUrlOverride(baseUrlOverride);
         target.setMethod(method);
         target.setType(type);
         target.setCustomHeaders(customHeaders);

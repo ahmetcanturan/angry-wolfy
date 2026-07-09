@@ -12,6 +12,7 @@ public record TargetRequest(
         @NotBlank @Size(max = 255) String name,
         @Size(max = 2000) String description,
         @NotBlank @Size(max = 500) String path,
+        @Size(max = 500) String baseUrlOverride,
         @NotNull HttpMethod method,
         @NotNull TargetType type,
         Map<String, String> customHeaders,

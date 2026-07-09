@@ -53,6 +53,17 @@ public class Target {
     @Column(nullable = false, length = 500)
     private String path;
 
+    /**
+     * Optional per-target base URL that overrides the active environment's base
+     * URL when set. Lets a single target point at a different domain (e.g. a
+     * one-off host) without editing any {@link Config}. Blank/null means "use the
+     * environment's base URL", the default behaviour. Headers still merge from
+     * the config regardless.
+     */
+    @Size(max = 500)
+    @Column(name = "base_url_override", length = 500)
+    private String baseUrlOverride;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -86,10 +97,17 @@ public class Target {
 
     public Target(String name, String description, Project project, String path, HttpMethod method,
                    TargetType type, Map<String, String> customHeaders, String body, String notes) {
+        this(name, description, project, path, null, method, type, customHeaders, body, notes);
+    }
+
+    public Target(String name, String description, Project project, String path, String baseUrlOverride,
+                   HttpMethod method, TargetType type, Map<String, String> customHeaders, String body,
+                   String notes) {
         this.name = name;
         this.description = description;
         this.project = project;
         this.path = path;
+        this.baseUrlOverride = normalizeBaseUrl(baseUrlOverride);
         this.method = method != null ? method : HttpMethod.GET;
         this.type = type != null ? type : TargetType.REST;
         this.customHeaders = customHeaders != null ? new LinkedHashMap<>(customHeaders) : new LinkedHashMap<>();
@@ -138,6 +156,26 @@ public class Target {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public String getBaseUrlOverride() {
+        return baseUrlOverride;
+    }
+
+    public void setBaseUrlOverride(String baseUrlOverride) {
+        this.baseUrlOverride = normalizeBaseUrl(baseUrlOverride);
+    }
+
+    /** Trims and drops trailing slashes; blank becomes null so it reads as "unset". */
+    static String normalizeBaseUrl(String url) {
+        if (url == null) {
+            return null;
+        }
+        String trimmed = url.strip();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public HttpMethod getMethod() {

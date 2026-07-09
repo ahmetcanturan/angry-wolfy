@@ -25,6 +25,9 @@ public class TargetForm {
     @Size(max = 500)
     private String path;
 
+    @Size(max = 500)
+    private String baseUrlOverride;
+
     @NotNull
     private HttpMethod method = HttpMethod.GET;
 
@@ -42,11 +45,12 @@ public class TargetForm {
     public TargetForm() {
     }
 
-    public TargetForm(String name, String description, String path, HttpMethod method, TargetType type,
-                       List<HeaderEntryForm> headers, String body, String notes) {
+    public TargetForm(String name, String description, String path, String baseUrlOverride, HttpMethod method,
+                       TargetType type, List<HeaderEntryForm> headers, String body, String notes) {
         this.name = name;
         this.description = description;
         this.path = path;
+        this.baseUrlOverride = baseUrlOverride;
         this.method = method;
         this.type = type;
         this.headers = headers != null ? headers : new ArrayList<>();
@@ -59,6 +63,7 @@ public class TargetForm {
                 target.getName(),
                 target.getDescription(),
                 target.getPath(),
+                target.getBaseUrlOverride(),
                 target.getMethod(),
                 target.getType(),
                 toHeaderEntryForms(target.getCustomHeaders()),
@@ -98,6 +103,14 @@ public class TargetForm {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public String getBaseUrlOverride() {
+        return baseUrlOverride;
+    }
+
+    public void setBaseUrlOverride(String baseUrlOverride) {
+        this.baseUrlOverride = baseUrlOverride;
     }
 
     public HttpMethod getMethod() {

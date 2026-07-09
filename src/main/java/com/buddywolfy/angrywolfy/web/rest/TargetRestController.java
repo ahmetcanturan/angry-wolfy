@@ -44,8 +44,8 @@ public class TargetRestController {
     public ResponseEntity<TargetResponse> create(@PathVariable Long projectId,
                                                   @Valid @RequestBody TargetRequest request) {
         var created = targetService.create(request.name(), request.description(), projectId,
-                request.path(), request.method(), request.type(), request.customHeaders(),
-                request.body(), request.notes());
+                request.path(), request.baseUrlOverride(), request.method(), request.type(),
+                request.customHeaders(), request.body(), request.notes());
         var body = TargetResponse.from(created);
         return ResponseEntity.created(URI.create("/api/targets/" + created.getId())).body(body);
     }
@@ -53,8 +53,8 @@ public class TargetRestController {
     @PutMapping("/api/targets/{id}")
     public TargetResponse update(@PathVariable Long id, @Valid @RequestBody TargetRequest request) {
         var updated = targetService.update(id, request.name(), request.description(),
-                request.path(), request.method(), request.type(), request.customHeaders(),
-                request.body(), request.notes());
+                request.path(), request.baseUrlOverride(), request.method(), request.type(),
+                request.customHeaders(), request.body(), request.notes());
         return TargetResponse.from(updated);
     }
 

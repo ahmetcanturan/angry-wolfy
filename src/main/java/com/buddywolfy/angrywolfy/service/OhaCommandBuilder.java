@@ -85,9 +85,15 @@ public class OhaCommandBuilder {
         return args;
     }
 
-    /** Joins the config base URL and target path into a single absolute URL. */
+    /**
+     * Joins a base URL and the target path into a single absolute URL. The
+     * target's own {@code baseUrlOverride} wins when set, letting one target
+     * point at a different domain than the environment; otherwise the config's
+     * base URL is used. Both are already trailing-slash-normalized.
+     */
     String resolveUrl(Config config, Target target) {
-        String base = config.getBaseUrl(); // already trailing-slash-normalized by Config
+        String override = target.getBaseUrlOverride();
+        String base = (override != null && !override.isBlank()) ? override : config.getBaseUrl();
         String path = target.getPath();
         if (path == null || path.isBlank()) {
             return base;
