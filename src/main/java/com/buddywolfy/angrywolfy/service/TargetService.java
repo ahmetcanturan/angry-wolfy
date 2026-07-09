@@ -33,8 +33,12 @@ public class TargetService {
                           HttpMethod method, TargetType type, Map<String, String> customHeaders, String body,
                           String notes) {
         var project = projectService.getById(projectId);
-        return targetRepository.save(new Target(name, description, project, path, baseUrlOverride, method,
-                type, customHeaders, body, notes));
+        // Accept a path that arrives with a domain: lift the origin into the
+        // base-URL override so every entry point (form, API, import) can pass a
+        // full URL straight through.
+        TargetUrlSplitter.Split split = TargetUrlSplitter.split(path, baseUrlOverride);
+        return targetRepository.save(new Target(name, description, project, split.path(), split.baseUrl(),
+                method, type, customHeaders, body, notes));
     }
 
     @Transactional(readOnly = true)
@@ -64,10 +68,13 @@ public class TargetService {
                           HttpMethod method, TargetType type, Map<String, String> customHeaders, String body,
                           String notes) {
         Target target = getById(id);
+        // Same domain-in-path handling as create(): a full URL in the path field
+        // is split so the origin becomes the base-URL override.
+        TargetUrlSplitter.Split split = TargetUrlSplitter.split(path, baseUrlOverride);
         target.setName(name);
         target.setDescription(description);
-        target.setPath(path);
-        target.setBaseUrlOverride(baseUrlOverride);
+        target.setPath(split.path());
+        target.setBaseUrlOverride(split.baseUrl());
         target.setMethod(method);
         target.setType(type);
         target.setCustomHeaders(customHeaders);

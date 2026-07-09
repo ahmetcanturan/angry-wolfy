@@ -101,58 +101,90 @@ public class PostmanImportService {
         importedNames.add(name);
     }
 
-    // ---- URL → path -----------------------------------------------------
+    // ---- URL → path (domain kept when the request URL is absolute) ------
 
-    /** The path (+ query) portion only; the host is supplied by the environment. */
+    /**
+     * The request URL as-is, domain included when it's an absolute URL. A
+     * concrete host is preserved so {@code TargetService} can lift it into the
+     * target's base-URL override; a {@code {{var}}} base stays in place and is
+     * later reduced to a relative path (a variable can't become a real host).
+     */
     private String extractPath(JsonNode url) {
         if (url == null || url.isMissingNode() || url.isNull()) {
             return "/";
         }
         if (url.isString()) {
-            return pathFromRaw(url.asString());
+            return normalizeRaw(url.asString());
         }
         if (url.isObject()) {
-            JsonNode segments = url.path("path");
-            if (segments.isArray() && segments.size() > 0) {
-                List<String> parts = new ArrayList<>();
-                for (JsonNode seg : segments) {
-                    String s = seg.isString() ? seg.asString() : seg.path("value").asString("");
-                    if (!s.isBlank()) {
-                        parts.add(s);
-                    }
-                }
-                String p = "/" + String.join("/", parts);
-                String q = queryString(url.path("query"));
-                return q.isEmpty() ? p : p + "?" + q;
+            // Prefer Postman's own raw URL — it carries the host when absolute.
+            if (url.path("raw").isString() && !url.path("raw").asString("").isBlank()) {
+                return normalizeRaw(url.path("raw").asString());
             }
-            if (url.path("raw").isString()) {
-                return pathFromRaw(url.path("raw").asString());
-            }
+            // Otherwise rebuild from host + path segments (+ query).
+            String host = hostString(url.path("host"), url.path("protocol"));
+            String p = pathFromSegments(url.path("path"));
+            String q = queryString(url.path("query"));
+            String full = host + p;
+            return q.isEmpty() ? full : full + "?" + q;
         }
         return "/";
     }
 
-    /** Strip protocol/host and any leading {@code {{var}}} base, keeping path + query. */
-    private String pathFromRaw(String raw) {
+    /** Trim; keep an absolute URL whole, ensure a relative one starts with "/". */
+    private String normalizeRaw(String raw) {
         if (raw == null || raw.isBlank()) {
             return "/";
         }
         String s = raw.strip();
-        if (s.startsWith("{{")) {
-            int end = s.indexOf("}}");
-            if (end >= 0) {
-                s = s.substring(end + 2);
-            }
-        }
-        int scheme = s.indexOf("://");
-        if (scheme >= 0) {
-            int slash = s.indexOf('/', scheme + 3);
-            s = slash >= 0 ? s.substring(slash) : "/";
-        }
-        if (s.isBlank()) {
-            return "/";
+        // Absolute URL or a {{var}} base: hand it through untouched for splitting.
+        if (s.contains("://") || s.startsWith("{{")) {
+            return s;
         }
         return s.startsWith("/") ? s : "/" + s;
+    }
+
+    /** Join path segments into "/a/b"; empty segments yield "/". */
+    private String pathFromSegments(JsonNode segments) {
+        if (!segments.isArray() || segments.size() == 0) {
+            return "/";
+        }
+        List<String> parts = new ArrayList<>();
+        for (JsonNode seg : segments) {
+            String s = seg.isString() ? seg.asString() : seg.path("value").asString("");
+            if (!s.isBlank()) {
+                parts.add(s);
+            }
+        }
+        return parts.isEmpty() ? "/" : "/" + String.join("/", parts);
+    }
+
+    /**
+     * Reassemble "scheme://host" from Postman's host array + protocol. Returns
+     * "" when no concrete host is present (so the result is a relative path).
+     */
+    private String hostString(JsonNode host, JsonNode protocol) {
+        if (!host.isArray() || host.size() == 0) {
+            return "";
+        }
+        List<String> parts = new ArrayList<>();
+        for (JsonNode h : host) {
+            String s = h.isString() ? h.asString() : h.path("value").asString("");
+            if (!s.isBlank()) {
+                parts.add(s);
+            }
+        }
+        if (parts.isEmpty()) {
+            return "";
+        }
+        String joined = String.join(".", parts);
+        // A {{var}} host can't become a concrete origin — leave it relative.
+        if (joined.startsWith("{{")) {
+            return "";
+        }
+        String scheme = protocol.isString() && !protocol.asString("").isBlank()
+                ? protocol.asString() : "https";
+        return scheme + "://" + joined;
     }
 
     private String queryString(JsonNode query) {

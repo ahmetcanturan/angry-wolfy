@@ -295,9 +295,11 @@
                 </div>
 
                 <div class="wf-field">
-                    <label for="path">Path</label>
-                    <input type="text" id="path" class="wf-input wf-mono" th:field="*{path}" placeholder="/v1/payments"/>
+                    <label for="path">Path or full URL</label>
+                    <input type="text" id="path" class="wf-input wf-mono" th:field="*{path}"
+                           placeholder="/v1/payments  or  https://api.example.com/v1/payments"/>
                     <span class="wf-error" th:if="${#fields.hasErrors('path')}" th:errors="*{path}">Path error</span>
+                    <span class="wf-no-headers" style="padding:0;">Paste a full URL and the domain is saved as this target's base-URL override automatically.</span>
                 </div>
 
                 <div class="wf-row">
