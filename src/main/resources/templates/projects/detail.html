@@ -1117,36 +1117,36 @@
         <div class="modal-head">
             <div>
                 <h3>Import targets</h3>
-                <p class="modal-sub">Bring endpoints in from an existing collection — they're saved as targets in this project.</p>
+                <p class="modal-sub">Bring endpoints in from an existing collection or API spec — they're saved as targets in this project.</p>
             </div>
             <button type="button" class="modal-close js-import-close" title="Close" aria-label="Close">✕</button>
         </div>
         <div class="modal-body">
-            <!-- source picker (Postman active; more can be added here) -->
+            <!-- source picker (cURL still to come) -->
             <div class="src-list">
-                <button type="button" class="src-card active" data-source="postman">
+                <button type="button" class="src-card active js-src-card" data-source="postman">
                     <span class="src-ico">P</span>
                     <span class="src-meta"><span class="src-name">Postman</span><span class="src-desc">Collection v2.x</span></span>
                 </button>
-                <div class="src-card disabled" aria-disabled="true">
+                <button type="button" class="src-card js-src-card" data-source="openapi">
                     <span class="src-ico">O</span>
-                    <span class="src-meta"><span class="src-name">OpenAPI</span><span class="src-desc">Coming soon</span></span>
-                </div>
+                    <span class="src-meta"><span class="src-name">OpenAPI / Swagger</span><span class="src-desc">2.0 &amp; 3.x · JSON or YAML</span></span>
+                </button>
                 <div class="src-card disabled" aria-disabled="true">
                     <span class="src-ico">↯</span>
                     <span class="src-meta"><span class="src-name">cURL</span><span class="src-desc">Coming soon</span></span>
                 </div>
             </div>
 
-            <!-- Postman panel -->
-            <div class="src-panel js-src-postman">
+            <!-- shared file/paste panel; texts follow the selected source -->
+            <div class="src-panel js-src-panel">
                 <label class="drop js-drop">
                     <input type="file" class="js-import-file" accept="application/json,.json" hidden>
                     <span class="drop-ico">⤓</span>
-                    <span class="drop-text">Drop a <strong>collection.json</strong> here, or <span class="drop-link">browse</span></span>
+                    <span class="drop-text">Drop a <strong class="js-drop-strong">collection.json</strong> here, or <span class="drop-link">browse</span></span>
                     <span class="drop-file js-drop-file"></span>
                 </label>
-                <div class="paste-or">— or paste the collection JSON —</div>
+                <div class="paste-or js-paste-or">— or paste the collection JSON —</div>
                 <textarea class="js-import-text paste-area" placeholder='{ "info": { … }, "item": [ … ] }' spellcheck="false"></textarea>
                 <div class="import-result js-import-result" hidden></div>
             </div>
@@ -2107,7 +2107,7 @@
         });
     });
 
-    // ---- Import modal (Postman collection → targets) -------------------
+    // ---- Import modal (Postman collection / OpenAPI spec → targets) ----
     (function importModal() {
         const modal = document.querySelector('.js-import-modal');
         const openBtn = document.querySelector('.js-import-open');
@@ -2121,6 +2121,42 @@
         const submitBtn = modal.querySelector('.js-import-submit');
         let projectId = null;
         let fileText = null;   // contents of a chosen/dropped file, if any
+
+        // Per-source texts and request details; the endpoint is /import/<source>.
+        const SOURCES = {
+            postman: {
+                accept: 'application/json,.json',
+                fileHint: 'collection.json',
+                pasteHint: '— or paste the collection JSON —',
+                placeholder: '{ "info": { … }, "item": [ … ] }',
+                contentType: 'application/json'
+            },
+            openapi: {
+                accept: 'application/json,.json,.yaml,.yml',
+                fileHint: 'openapi.yaml / .json',
+                pasteHint: '— or paste the spec (JSON or YAML) —',
+                placeholder: 'openapi: 3.0.3\ninfo:\n  title: …\npaths:\n  /users:\n    get: …',
+                contentType: 'text/plain;charset=UTF-8'
+            }
+        };
+        let source = 'postman';
+
+        function applySource() {
+            const s = SOURCES[source];
+            fileInput.setAttribute('accept', s.accept);
+            modal.querySelector('.js-drop-strong').textContent = s.fileHint;
+            modal.querySelector('.js-paste-or').textContent = s.pasteHint;
+            textArea.placeholder = s.placeholder;
+        }
+        modal.querySelectorAll('.js-src-card').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                source = btn.getAttribute('data-source');
+                modal.querySelectorAll('.js-src-card').forEach((b) =>
+                    b.classList.toggle('active', b === btn));
+                resultEl.hidden = true; resultEl.innerHTML = '';
+                applySource();
+            });
+        });
 
         function openModal() {
             projectId = openBtn.getAttribute('data-project-id');
@@ -2169,15 +2205,15 @@
 
         submitBtn.addEventListener('click', async () => {
             const collection = (fileText != null ? fileText : textArea.value).trim();
-            if (!collection) { showResult('error', 'Choose a collection file or paste the JSON first.'); return; }
+            if (!collection) { showResult('error', 'Choose a file or paste the content first.'); return; }
 
             const original = submitBtn.textContent;
             submitBtn.disabled = true;
             submitBtn.textContent = 'Importing…';
             try {
-                const res = await fetch(`/api/projects/${projectId}/targets/import/postman`, {
+                const res = await fetch(`/api/projects/${projectId}/targets/import/${source}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': SOURCES[source].contentType },
                     body: collection
                 });
                 const data = await res.json();
