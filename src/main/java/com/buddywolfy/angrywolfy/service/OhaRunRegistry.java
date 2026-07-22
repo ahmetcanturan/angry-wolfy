@@ -7,21 +7,23 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Tracks in-flight oha processes by run id so a separate request can cancel
- * them. The run itself is still driven synchronously by {@link OhaRunner};
- * this registry only provides the side-channel needed to kill a live process
- * and record that the kill was a deliberate cancellation.
+ * Tracks in-flight load-test runs by run id so a separate request can cancel
+ * them. Runs are still driven synchronously by their runner ({@link OhaRunner},
+ * {@link WsRunner}); this registry only provides the side-channel needed to
+ * stop a live run and record that the stop was a deliberate cancellation.
+ * Runners register whatever "kill" means for them — destroying the oha
+ * process, aborting open sockets.
  */
 @Component
 public class OhaRunRegistry {
 
-    private final Map<String, Process> live = new ConcurrentHashMap<>();
+    private final Map<String, Runnable> live = new ConcurrentHashMap<>();
     private final Set<String> cancelled = ConcurrentHashMap.newKeySet();
 
-    /** Registers a running process under the given run id. */
-    void register(String runId, Process process) {
+    /** Registers a live run and the action that kills it. */
+    void register(String runId, Runnable killer) {
         cancelled.remove(runId);
-        live.put(runId, process);
+        live.put(runId, killer);
     }
 
     /** Removes a run and clears its cancelled flag once it has fully finished. */
@@ -36,17 +38,17 @@ public class OhaRunRegistry {
     }
 
     /**
-     * Marks the run cancelled and force-kills its process, if still live.
+     * Marks the run cancelled and kills it, if still live.
      *
-     * @return true if a live process was found and destroyed, false otherwise
+     * @return true if a live run was found and killed, false otherwise
      */
     public boolean cancel(String runId) {
         cancelled.add(runId);
-        Process process = live.remove(runId);
-        if (process == null) {
+        Runnable killer = live.remove(runId);
+        if (killer == null) {
             return false;
         }
-        process.destroyForcibly();
+        killer.run();
         return true;
     }
 }

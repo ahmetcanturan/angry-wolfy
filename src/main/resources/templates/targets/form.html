@@ -303,7 +303,7 @@
                 </div>
 
                 <div class="wf-row">
-                    <div class="wf-field">
+                    <div class="wf-field js-method-field">
                         <label>Method</label>
                         <div class="wf-pill-group">
                             <span th:each="m : ${T(com.buddywolfy.angrywolfy.enums.HttpMethod).values()}"
@@ -387,5 +387,21 @@
         </div>
     </main>
 </div>
+<script>
+// A WebSocket target has no HTTP method (the connection is a WS upgrade), so
+// hide the Method pills while WEBSOCKET is the selected type. The stored
+// method stays GET, which is what the upgrade request uses anyway.
+(function () {
+    const methodField = document.querySelector('.js-method-field');
+    const typeRadios = document.querySelectorAll('input[type="radio"][id^="type-"]');
+    if (!methodField || !typeRadios.length) { return; }
+    function sync() {
+        const ws = document.getElementById('type-WEBSOCKET');
+        methodField.style.display = ws && ws.checked ? 'none' : '';
+    }
+    typeRadios.forEach((r) => r.addEventListener('change', sync));
+    sync();
+})();
+</script>
 </body>
 </html>

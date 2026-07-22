@@ -279,12 +279,13 @@
                         <span class="method-badge"
                               th:with="m=${latest.httpMethod}"
                               th:style="${
-                                  m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
+                                  m == 'WS' ? 'background:#efe8fb;color:#6b3fc0' :
+                                  (m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
                                   (m == 'PUT' ? 'background:#fdf1dd;color:#a6710a' :
                                   (m == 'PATCH' ? 'background:#dff4f3;color:#0f8a80' :
                                   (m == 'DELETE' ? 'background:#fde8e8;color:#c0392b' :
                                   ((m == 'HEAD' or m == 'OPTIONS') ? 'background:#eef1f6;color:#586274' :
-                                  'background:#e3f4ea;color:#1f8a4c'))))
+                                  'background:#e3f4ea;color:#1f8a4c')))))
                               }"
                               th:text="${latest.httpMethod}">GET</span>
                         <span class="ep-url" th:text="${latest.endpoint}" th:title="${latest.endpoint}">http://localhost:8080/v1/path</span>

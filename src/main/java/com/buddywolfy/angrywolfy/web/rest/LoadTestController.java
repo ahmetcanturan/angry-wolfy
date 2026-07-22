@@ -5,12 +5,14 @@ import com.buddywolfy.angrywolfy.dto.OhaOptions;
 import com.buddywolfy.angrywolfy.dto.OhaResult;
 import com.buddywolfy.angrywolfy.entity.Config;
 import com.buddywolfy.angrywolfy.entity.Target;
+import com.buddywolfy.angrywolfy.enums.TargetType;
 import com.buddywolfy.angrywolfy.service.ChartService;
 import com.buddywolfy.angrywolfy.service.ConfigService;
 import com.buddywolfy.angrywolfy.service.OhaRunRegistry;
 import com.buddywolfy.angrywolfy.service.OhaRunner;
 import com.buddywolfy.angrywolfy.service.TargetCheckService;
 import com.buddywolfy.angrywolfy.service.TargetService;
+import com.buddywolfy.angrywolfy.service.WsRunner;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,7 @@ public class LoadTestController {
     private final TargetService targetService;
     private final ConfigService configService;
     private final OhaRunner ohaRunner;
+    private final WsRunner wsRunner;
     private final OhaRunRegistry runRegistry;
     private final ChartService chartService;
     private final TargetCheckService checkService;
@@ -50,12 +53,14 @@ public class LoadTestController {
     public LoadTestController(TargetService targetService,
                               ConfigService configService,
                               OhaRunner ohaRunner,
+                              WsRunner wsRunner,
                               OhaRunRegistry runRegistry,
                               ChartService chartService,
                               TargetCheckService checkService) {
         this.targetService = targetService;
         this.configService = configService;
         this.ohaRunner = ohaRunner;
+        this.wsRunner = wsRunner;
         this.runRegistry = runRegistry;
         this.chartService = chartService;
         this.checkService = checkService;
@@ -81,10 +86,13 @@ public class LoadTestController {
         requireSameProject(target, config);
 
         String id = (runId != null && !runId.isBlank()) ? runId : UUID.randomUUID().toString();
-        OhaOptions effective = options != null ? options : new OhaOptions(null, null, null, null, null);
+        OhaOptions effective = options != null ? options : new OhaOptions(null, null, null, null, null, null);
+        // WebSocket targets run on the native WS generator; everything else on oha.
         // A cancelled/failed run throws before reaching here, so only successful
         // results are persisted (capped at 50 per target).
-        OhaResult result = ohaRunner.run(id, target, config, effective);
+        OhaResult result = target.getType() == TargetType.WEBSOCKET
+                ? wsRunner.run(id, target, config, effective)
+                : ohaRunner.run(id, target, config, effective);
         chartService.save(target, config, result);
         return ResponseEntity.ok().header(RUN_ID_HEADER, id).body(result);
     }

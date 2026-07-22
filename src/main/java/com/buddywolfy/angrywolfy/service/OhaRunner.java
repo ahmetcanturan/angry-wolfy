@@ -61,7 +61,7 @@ public class OhaRunner {
         log.info("Running oha [{}]: {}", runId, String.join(" ", command));
 
         Process process = start(command);
-        registry.register(runId, process);
+        registry.register(runId, process::destroyForcibly);
         try {
             // Read stdout fully before waitFor so a large payload can't fill the
             // pipe buffer and deadlock the process.

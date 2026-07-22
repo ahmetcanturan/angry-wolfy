@@ -827,16 +827,17 @@
                 <div class="target-row">
                     <div class="target-row-left">
                         <span class="method-badge"
-                              th:with="m=${t.method != null ? t.method.name() : 'GET'}"
+                              th:with="m=${t.type != null and t.type.name() == 'WEBSOCKET' ? 'WS' : (t.method != null ? t.method.name() : 'GET')}"
                               th:style="${
-                                  m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
+                                  m == 'WS' ? 'background:#efe8fb;color:#6b3fc0' :
+                                  (m == 'POST' ? 'background:#e4eefb;color:#1e5bb8' :
                                   (m == 'PUT' ? 'background:#fdf1dd;color:#a6710a' :
                                   (m == 'PATCH' ? 'background:#dff4f3;color:#0f8a80' :
                                   (m == 'DELETE' ? 'background:#fde8e8;color:#c0392b' :
                                   ((m == 'HEAD' or m == 'OPTIONS') ? 'background:#eef1f6;color:#586274' :
-                                  'background:#e3f4ea;color:#1f8a4c'))))
+                                  'background:#e3f4ea;color:#1f8a4c')))))
                               }"
-                              th:text="${t.method}">GET</span>
+                              th:text="${m}">GET</span>
                         <div style="min-width:0;">
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <span class="target-name" th:text="${t.name}">Target name</span>
@@ -858,7 +859,7 @@
                                     title="Send one request and show the response">✓ Check</button>
                             <button type="button" class="btn-run js-run-target"
                                     th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}, data-target-name=${t.name},
-                                             data-target-method=${t.method}, data-target-path=${t.path},
+                                             data-target-method=${t.type != null and t.type.name() == 'WEBSOCKET' ? 'WS' : t.method}, data-target-path=${t.path},
                                              data-target-url=${(t.baseUrlOverride != null ? t.baseUrlOverride : (activeConfig != null ? activeConfig.baseUrl : '')) + t.path}">
                                 <span class="play"></span>Run
                             </button>
@@ -893,6 +894,14 @@
                             <label class="rc-label">Rate limit (req/s)</label>
                             <input type="number" class="rc-input js-cfg-rps" min="0.01" step="any"
                                    placeholder="unlimited"/>
+                        </div>
+                        <div class="rc-field" th:if="${t.type != null and t.type.name() == 'WEBSOCKET'}">
+                            <label class="rc-label">Socket mode</label>
+                            <select class="rc-input js-cfg-wsmode">
+                                <option value="echo" selected>Echo (round-trip)</option>
+                                <option value="send">Send only</option>
+                                <option value="handshake">Handshake only</option>
+                            </select>
                         </div>
                     </div>
                     <div class="rc-hint">Leave rate limit blank to send as fast as possible.</div>
@@ -1042,13 +1051,18 @@
                         <div class="reqcfg js-reqcfg" th:attr="data-target-id=${t.id}">
                             <!-- endpoint: method + path, plus per-target base URL override -->
                             <div class="reqcfg-endpoint">
-                                <div class="rq-field">
+                                <!-- WS targets have no HTTP method — the connection is a WebSocket upgrade -->
+                                <div class="rq-field" th:if="${t.type == null or t.type.name() != 'WEBSOCKET'}">
                                     <label class="rq-label">Method</label>
                                     <select class="rq-select js-rq-method">
                                         <option th:each="m : ${T(com.buddywolfy.angrywolfy.enums.HttpMethod).values()}"
                                                 th:value="${m}" th:text="${m}"
                                                 th:selected="${t.method != null and t.method.equals(m)}">GET</option>
                                     </select>
+                                </div>
+                                <div class="rq-field" th:if="${t.type != null and t.type.name() == 'WEBSOCKET'}">
+                                    <label class="rq-label">Protocol</label>
+                                    <span class="rq-select" style="display:inline-flex;align-items:center;background:#efe8fb;color:#6b3fc0;font-weight:700;border:none;">WS</span>
                                 </div>
                                 <div class="rq-field" style="flex:1;min-width:220px;">
                                     <label class="rq-label">Path</label>
@@ -1317,11 +1331,12 @@
         const el = card.querySelector('.js-breakdown');
         const rows = [];
         codes.forEach(([code, count]) => {
-            const ok = /^2/.test(code);
+            const ok = /^2/.test(code) || code === 'ok';   // 'ok' = successful WS operation
             const color = ok ? BRAND.green : (/^3/.test(code) ? BRAND.blue : BRAND.red);
+            const label = /^\d/.test(code) ? `HTTP ${code}` : code;
             rows.push(`<div class="bd-row"><div class="bd-left">
                 <span class="bd-dot" style="background:${color}"></span>
-                <span class="bd-label">HTTP ${code}</span></div>
+                <span class="bd-label">${label}</span></div>
                 <span class="bd-count">${num(count)}</span></div>`);
         });
         errors.forEach(([msg, count]) => {
@@ -1340,7 +1355,7 @@
         const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
         const failed = Object.values(result.errorDistribution || {}).reduce((a, b) => a + b, 0)
             + Object.entries(result.statusCodeDistribution || {})
-                .filter(([code]) => !/^2/.test(code)).reduce((a, [, c]) => a + c, 0);
+                .filter(([code]) => !/^2/.test(code) && code !== 'ok').reduce((a, [, c]) => a + c, 0);
         const success = Math.max(0, total - failed);
 
         // hero + tiles. Success rate is 2xx / total so it agrees with the donut
@@ -1729,12 +1744,13 @@
             });
 
             const meta = targetMeta(card);   // name is used elsewhere; grab current target facts
+            const methodSel = rc.querySelector('.js-rq-method');   // absent on WS cards
             const body = {
                 name: meta.name,
                 description: null,
                 path: rc.querySelector('.js-rq-path').value.trim(),
                 baseUrlOverride: rc.querySelector('.js-rq-baseurl').value.trim() || null,
-                method: rc.querySelector('.js-rq-method').value,
+                method: methodSel ? methodSel.value : 'GET',
                 type: card.querySelector('.type-badge') ? card.querySelector('.type-badge').textContent.trim() : 'REST',
                 customHeaders: headers,
                 body: rc.querySelector('.js-rq-body').value,
@@ -1772,8 +1788,10 @@
 
     // After a save, update the visible row (method badge, path, run/check data-*).
     function applyTargetToRow(card, t) {
+        const typeBadge = card.querySelector('.type-badge');
+        const isWs = typeBadge && typeBadge.textContent.trim() === 'WEBSOCKET';
         const badge = card.querySelector('.method-badge');
-        if (badge) { badge.textContent = t.method; }
+        if (badge) { badge.textContent = isWs ? 'WS' : t.method; }
         const pathEl = card.querySelector('.target-path');
         if (pathEl) {
             let prefix = pathEl.querySelector('.prefix');
@@ -1788,7 +1806,7 @@
         }
         const runBtn = card.querySelector('.js-run-target');
         if (runBtn) {
-            runBtn.setAttribute('data-target-method', t.method);
+            runBtn.setAttribute('data-target-method', isWs ? 'WS' : t.method);
             runBtn.setAttribute('data-target-path', t.path);
             const base = t.baseUrlOverride || selectedEnvBase(card);
             runBtn.setAttribute('data-target-url', (base || '') + t.path);
@@ -1820,6 +1838,35 @@
                 panel.querySelector('.js-amount-duration').hidden = (mode !== 'duration');
             });
         });
+    });
+
+    // ---- WebSocket panels: relabel knobs to their real per-mode meaning ---
+    // Every field still drives the run, but "Requests"/"req/s" mean different
+    // things for a socket than for HTTP, so name them for the selected mode
+    // instead of leaving HTTP jargon that reads as meaningless on a WS card.
+    const WS_LABELS = {
+        echo:      { count: 'Messages',    conc: 'Connections',      rps: 'Rate limit (msg/s)',
+                     hint: 'Echo: each connection sends the body and waits for a reply. Leave rate limit blank to send as fast as possible.' },
+        send:      { count: 'Messages',    conc: 'Connections',      rps: 'Rate limit (msg/s)',
+                     hint: 'Send-only: fires messages without waiting for a reply. Leave rate limit blank to send as fast as possible.' },
+        handshake: { count: 'Connections', conc: 'Max concurrent',   rps: 'Rate limit (conn/s)',
+                     hint: 'Handshake: opens connections only — no messages sent. Leave rate limit blank to open as fast as possible.' }
+    };
+    function labelFieldOf(panel, sel) {
+        return panel.querySelector(sel).closest('.rc-field').querySelector('.rc-label');
+    }
+    function relabelWsPanel(panel, mode) {
+        const L = WS_LABELS[mode] || WS_LABELS.echo;
+        labelFieldOf(panel, '.js-cfg-requests').textContent = L.count;
+        panel.querySelector('.js-loadby[data-mode="requests"]').textContent = L.count;
+        labelFieldOf(panel, '.js-cfg-concurrency').textContent = L.conc;
+        labelFieldOf(panel, '.js-cfg-rps').textContent = L.rps;
+        panel.querySelector('.rc-hint').textContent = L.hint;
+    }
+    document.querySelectorAll('.js-cfg-wsmode').forEach((sel) => {
+        const panel = sel.closest('.js-config-panel');
+        relabelWsPanel(panel, sel.value);
+        sel.addEventListener('change', () => relabelWsPanel(panel, sel.value));
     });
 
     // ---- shared run-config persisted in localStorage --------------------
@@ -1882,6 +1929,9 @@
         }
         const rps = parseFloat(panel.querySelector('.js-cfg-rps').value);
         if (!isNaN(rps) && rps > 0) { opts.queryPerSecond = rps; }
+        // WebSocket targets carry their run mode; the field only exists on WS cards.
+        const wsMode = panel.querySelector('.js-cfg-wsmode');
+        if (wsMode) { opts.wsMode = wsMode.value; }
         // Persist this run's config as the shared global one.
         saveGlobalConfig(readConfigPanel(panel));
         return opts;
@@ -1962,6 +2012,7 @@
     }
 
     function statusClass(status) {
+        if (status === 101) return 'ok';   // WebSocket upgrade
         if (status >= 200 && status < 300) return 'ok';
         if (status >= 300 && status < 400) return 'redir';
         return 'cerr';

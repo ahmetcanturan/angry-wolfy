@@ -3,6 +3,7 @@ package com.buddywolfy.angrywolfy.service;
 import com.buddywolfy.angrywolfy.dto.CheckResult;
 import com.buddywolfy.angrywolfy.entity.Config;
 import com.buddywolfy.angrywolfy.entity.Target;
+import com.buddywolfy.angrywolfy.enums.TargetType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,11 +12,17 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Sends a single, real HTTP request to a target evaluated in an environment and
@@ -48,6 +55,9 @@ public class TargetCheckService {
     }
 
     public CheckResult check(Target target, Config config) {
+        if (target.getType() == TargetType.WEBSOCKET) {
+            return checkWebSocket(target, config);
+        }
         String url = urls.resolveUrl(config, target);
         String method = target.getMethod().name();
 
@@ -73,6 +83,119 @@ public class TargetCheckService {
         return new CheckResult(
                 response.statusCode(), reason, method, url, durationMs,
                 contentType, raw.length, detectKind(contentType, body), truncated, body);
+    }
+
+    /**
+     * The WebSocket flavour of a Check: open a real socket, send the target's
+     * body (if any), and show whatever frames arrive within a short window —
+     * enough to prove the endpoint speaks WS and see what it says first.
+     */
+    private CheckResult checkWebSocket(Target target, Config config) {
+        String url = WsRunner.wsUri(urls.resolveUrl(config, target)).toString();
+        HttpClient client = HttpClient.newBuilder().connectTimeout(timeout).build();
+        WebSocket.Builder builder = client.newWebSocketBuilder().connectTimeout(timeout);
+        for (Map.Entry<String, String> h : urls.mergedHeaders(config, target).entrySet()) {
+            String key = h.getKey() != null ? h.getKey().toLowerCase(Locale.ROOT) : "";
+            if (key.isBlank() || RESTRICTED.contains(key) || key.startsWith("sec-websocket-")) {
+                continue;
+            }
+            try {
+                builder.header(h.getKey(), h.getValue() != null ? h.getValue() : "");
+            } catch (IllegalArgumentException ignored) {
+                // A header name the JDK refuses to set — skip it rather than fail the check.
+            }
+        }
+
+        BlockingQueue<String> frames = new LinkedBlockingQueue<>();
+        long startNanos = System.nanoTime();
+        WebSocket ws = openSocket(builder, url, frames);
+        long handshakeMs = (System.nanoTime() - startNanos) / 1_000_000;
+
+        try {
+            if (target.getBody() != null && !target.getBody().isBlank()) {
+                ws.sendText(target.getBody(), true).get(timeout.toSeconds(), TimeUnit.SECONDS);
+            }
+            String body = collectFrames(frames);
+            boolean silent = body.isEmpty();
+            if (silent) {
+                body = "(connected — no message received within 2s)";
+            }
+            return new CheckResult(101, "Switching Protocols", "WS", url, handshakeMs,
+                    "text/plain", body.length(), silent ? "text" : detectKind("", body), false, body);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TargetCheckException("Check was interrupted", e);
+        } catch (Exception e) {
+            throw new TargetCheckException("WebSocket send failed: " + describeFailure(e), e);
+        } finally {
+            try {
+                ws.sendClose(WebSocket.NORMAL_CLOSURE, "check done").get(2, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                ws.abort();
+            } catch (Exception e) {
+                ws.abort();
+            }
+        }
+    }
+
+    private WebSocket openSocket(WebSocket.Builder builder, String url, BlockingQueue<String> frames) {
+        WebSocket.Listener listener = new WebSocket.Listener() {
+            private final StringBuilder buf = new StringBuilder();
+
+            @Override
+            public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                buf.append(data);
+                if (last) {
+                    frames.offer(buf.toString());
+                    buf.setLength(0);
+                }
+                webSocket.request(1);
+                return null;
+            }
+
+            @Override
+            public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
+                frames.offer("(binary frame, " + data.remaining() + " bytes)");
+                webSocket.request(1);
+                return null;
+            }
+        };
+        try {
+            return builder.buildAsync(URI.create(url), listener)
+                    .get(timeout.plusSeconds(5).toSeconds(), TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TargetCheckException("Check was interrupted", e);
+        } catch (Exception e) {
+            throw new TargetCheckException(
+                    "Could not open a WebSocket to " + url + " — " + describeFailure(e)
+                            + ". Check the base URL and that the server speaks WebSocket.", e);
+        }
+    }
+
+    /** Drains up to five frames arriving within a ~2s window into one preview string. */
+    private String collectFrames(BlockingQueue<String> frames) throws InterruptedException {
+        StringBuilder out = new StringBuilder();
+        long deadline = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+        for (int i = 0; i < 5; i++) {
+            long waitMs = (deadline - System.nanoTime()) / 1_000_000;
+            if (waitMs <= 0) {
+                break;
+            }
+            String frame = frames.poll(waitMs, TimeUnit.MILLISECONDS);
+            if (frame == null) {
+                break;
+            }
+            if (!out.isEmpty()) {
+                out.append('\n');
+            }
+            out.append(frame, 0, Math.min(frame.length(), MAX_BODY_CHARS - out.length()));
+            if (out.length() >= MAX_BODY_CHARS) {
+                break;
+            }
+        }
+        return out.toString();
     }
 
     private HttpRequest buildRequest(Target target, Config config, String url, String method) {

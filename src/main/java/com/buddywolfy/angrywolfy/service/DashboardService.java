@@ -2,6 +2,8 @@ package com.buddywolfy.angrywolfy.service;
 
 import com.buddywolfy.angrywolfy.dto.DashboardData;
 import com.buddywolfy.angrywolfy.entity.Project;
+import com.buddywolfy.angrywolfy.entity.Target;
+import com.buddywolfy.angrywolfy.enums.TargetType;
 import com.buddywolfy.angrywolfy.repository.ChartRepository;
 import com.buddywolfy.angrywolfy.repository.ConfigRepository;
 import com.buddywolfy.angrywolfy.repository.ProjectRepository;
@@ -52,7 +54,7 @@ public class DashboardService {
                         c.getTarget().getProject().getName(),
                         c.getTarget().getId(),
                         c.getTarget().getName(),
-                        c.getTarget().getMethod() != null ? c.getTarget().getMethod().name() : "GET",
+                        methodLabelOf(c.getTarget()),
                         urls.resolveUrl(c.getConfig(), c.getTarget()),
                         c.getConfig().getName(),
                         c.getTotalRequests(),
@@ -82,6 +84,14 @@ public class DashboardService {
                 chartRepository.avgP95Ms(),
                 recentRuns,
                 projects);
+    }
+
+    /** WebSocket targets have no meaningful HTTP method — badge them "WS" instead. */
+    private static String methodLabelOf(Target target) {
+        if (target.getType() == TargetType.WEBSOCKET) {
+            return "WS";
+        }
+        return target.getMethod() != null ? target.getMethod().name() : "GET";
     }
 
     private static DashboardData.ProjectRollup toRollup(Project project, Object[] agg) {
