@@ -1117,12 +1117,12 @@
         <div class="modal-head">
             <div>
                 <h3>Import targets</h3>
-                <p class="modal-sub">Bring endpoints in from an existing collection or API spec — they're saved as targets in this project.</p>
+                <p class="modal-sub">Bring endpoints in from a collection, an API spec, or curl commands — they're saved as targets in this project.</p>
             </div>
             <button type="button" class="modal-close js-import-close" title="Close" aria-label="Close">✕</button>
         </div>
         <div class="modal-body">
-            <!-- source picker (cURL still to come) -->
+            <!-- source picker -->
             <div class="src-list">
                 <button type="button" class="src-card active js-src-card" data-source="postman">
                     <span class="src-ico">P</span>
@@ -1132,10 +1132,10 @@
                     <span class="src-ico">O</span>
                     <span class="src-meta"><span class="src-name">OpenAPI / Swagger</span><span class="src-desc">2.0 &amp; 3.x · JSON or YAML</span></span>
                 </button>
-                <div class="src-card disabled" aria-disabled="true">
+                <button type="button" class="src-card js-src-card" data-source="curl">
                     <span class="src-ico">↯</span>
-                    <span class="src-meta"><span class="src-name">cURL</span><span class="src-desc">Coming soon</span></span>
-                </div>
+                    <span class="src-meta"><span class="src-name">cURL</span><span class="src-desc">One or more commands</span></span>
+                </button>
             </div>
 
             <!-- shared file/paste panel; texts follow the selected source -->
@@ -2136,6 +2136,13 @@
                 fileHint: 'openapi.yaml / .json',
                 pasteHint: '— or paste the spec (JSON or YAML) —',
                 placeholder: 'openapi: 3.0.3\ninfo:\n  title: …\npaths:\n  /users:\n    get: …',
+                contentType: 'text/plain;charset=UTF-8'
+            },
+            curl: {
+                accept: '.sh,.txt,text/plain',
+                fileHint: 'commands.sh / .txt',
+                pasteHint: '— or paste the curl command(s) —',
+                placeholder: "curl -X POST https://api.example.com/users \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"name\": \"…\" }'",
                 contentType: 'text/plain;charset=UTF-8'
             }
         };

@@ -1,6 +1,7 @@
 package com.buddywolfy.angrywolfy.web.rest;
 
 import com.buddywolfy.angrywolfy.dto.ImportResult;
+import com.buddywolfy.angrywolfy.service.CurlImportService;
 import com.buddywolfy.angrywolfy.service.OpenApiImportService;
 import com.buddywolfy.angrywolfy.service.PostmanImportService;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,18 +11,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Imports external API definitions into a project as targets. Structured so more
- * sources (cURL, HAR, …) can be added alongside Postman and OpenAPI.
+ * sources (HAR, …) can be added alongside Postman, OpenAPI, and cURL.
  */
 @RestController
 public class ImportRestController {
 
     private final PostmanImportService postmanImportService;
     private final OpenApiImportService openApiImportService;
+    private final CurlImportService curlImportService;
 
     public ImportRestController(PostmanImportService postmanImportService,
-                                OpenApiImportService openApiImportService) {
+                                OpenApiImportService openApiImportService,
+                                CurlImportService curlImportService) {
         this.postmanImportService = postmanImportService;
         this.openApiImportService = openApiImportService;
+        this.curlImportService = curlImportService;
     }
 
     /**
@@ -40,5 +44,14 @@ public class ImportRestController {
     @PostMapping("/api/projects/{projectId}/targets/import/openapi")
     public ImportResult importOpenApi(@PathVariable Long projectId, @RequestBody String spec) {
         return openApiImportService.importSpec(projectId, spec);
+    }
+
+    /**
+     * {@code POST /api/projects/{projectId}/targets/import/curl} — body is one or
+     * more curl commands as plain text. Each command becomes a target.
+     */
+    @PostMapping("/api/projects/{projectId}/targets/import/curl")
+    public ImportResult importCurl(@PathVariable Long projectId, @RequestBody String commands) {
+        return curlImportService.importCommands(projectId, commands);
     }
 }
