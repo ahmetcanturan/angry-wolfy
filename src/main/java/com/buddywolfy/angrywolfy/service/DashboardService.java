@@ -1,7 +1,6 @@
 package com.buddywolfy.angrywolfy.service;
 
 import com.buddywolfy.angrywolfy.dto.DashboardData;
-import com.buddywolfy.angrywolfy.entity.Chart;
 import com.buddywolfy.angrywolfy.entity.Project;
 import com.buddywolfy.angrywolfy.repository.ChartRepository;
 import com.buddywolfy.angrywolfy.repository.ConfigRepository;
@@ -30,13 +29,16 @@ public class DashboardService {
     private final TargetRepository targetRepository;
     private final ConfigRepository configRepository;
     private final ChartRepository chartRepository;
+    private final OhaCommandBuilder urls;
 
     public DashboardService(ProjectRepository projectRepository, TargetRepository targetRepository,
-                            ConfigRepository configRepository, ChartRepository chartRepository) {
+                            ConfigRepository configRepository, ChartRepository chartRepository,
+                            OhaCommandBuilder urls) {
         this.projectRepository = projectRepository;
         this.targetRepository = targetRepository;
         this.configRepository = configRepository;
         this.chartRepository = chartRepository;
+        this.urls = urls;
     }
 
     @Transactional(readOnly = true)
@@ -51,7 +53,7 @@ public class DashboardService {
                         c.getTarget().getId(),
                         c.getTarget().getName(),
                         c.getTarget().getMethod() != null ? c.getTarget().getMethod().name() : "GET",
-                        endpointOf(c),
+                        urls.resolveUrl(c.getConfig(), c.getTarget()),
                         c.getConfig().getName(),
                         c.getTotalRequests(),
                         c.getRequestsPerSec(),
@@ -80,13 +82,6 @@ public class DashboardService {
                 chartRepository.avgP95Ms(),
                 recentRuns,
                 projects);
-    }
-
-    /** Full URL the run hit: the config's (already slash-normalised) base URL joined to the target path. */
-    private static String endpointOf(Chart chart) {
-        String baseUrl = chart.getConfig().getBaseUrl();
-        String path = chart.getTarget().getPath();
-        return (baseUrl != null ? baseUrl : "") + (path != null ? path : "");
     }
 
     private static DashboardData.ProjectRollup toRollup(Project project, Object[] agg) {

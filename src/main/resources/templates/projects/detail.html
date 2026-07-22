@@ -843,7 +843,8 @@
                                 <span class="type-badge" th:text="${t.type}">REST</span>
                             </div>
                             <div class="target-path">
-                                <span class="prefix" th:if="${activeConfig != null}" th:text="${activeConfig.baseUrl}"></span><span th:text="${t.path}">/v1/path</span>
+                                <span class="prefix" th:if="${t.baseUrlOverride != null or activeConfig != null}"
+                                      th:text="${t.baseUrlOverride != null ? t.baseUrlOverride : activeConfig.baseUrl}"></span><span th:text="${t.path}">/v1/path</span>
                             </div>
                         </div>
                     </div>
@@ -858,7 +859,7 @@
                             <button type="button" class="btn-run js-run-target"
                                     th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}, data-target-name=${t.name},
                                              data-target-method=${t.method}, data-target-path=${t.path},
-                                             data-target-url=${(activeConfig != null ? activeConfig.baseUrl : '') + t.path}">
+                                             data-target-url=${(t.baseUrlOverride != null ? t.baseUrlOverride : (activeConfig != null ? activeConfig.baseUrl : '')) + t.path}">
                                 <span class="play"></span>Run
                             </button>
                         </div>
@@ -1636,7 +1637,8 @@
             if (checkBtn) { checkBtn.setAttribute('data-config-id', configId); checkBtn.disabled = !configId; }
             if (runBtn) {
                 runBtn.setAttribute('data-config-id', configId);
-                const base = sel.options[sel.selectedIndex].text.split(' — ')[1] || '';
+                const override = (card.querySelector('.js-rq-baseurl')?.value || '').trim().replace(/\/+$/, '');
+                const base = override || sel.options[sel.selectedIndex].text.split(' — ')[1] || '';
                 const path = runBtn.getAttribute('data-target-path') || '';
                 runBtn.setAttribute('data-target-url', base + path);
             }
@@ -1774,9 +1776,14 @@
         if (badge) { badge.textContent = t.method; }
         const pathEl = card.querySelector('.target-path');
         if (pathEl) {
-            const prefix = pathEl.querySelector('.prefix');
+            let prefix = pathEl.querySelector('.prefix');
+            const base = t.baseUrlOverride || selectedEnvBase(card);
             pathEl.innerHTML = '';
-            if (prefix) { pathEl.appendChild(prefix); }
+            if (base) {
+                if (!prefix) { prefix = document.createElement('span'); prefix.className = 'prefix'; }
+                prefix.textContent = base;
+                pathEl.appendChild(prefix);
+            }
             pathEl.appendChild(document.createTextNode(t.path));
         }
         const runBtn = card.querySelector('.js-run-target');
