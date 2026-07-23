@@ -1,0 +1,81 @@
+/* =====================================================================
+   Angrywolfy — shared responsive layer
+   ---------------------------------------------------------------------
+   Linked LAST in <head> on the main "chrome" pages (overview, projects
+   list, project form, project detail) so these rules win the cascade
+   over each page's inline base styles.
+
+   The page-specific base/desktop CSS still lives inline in each template;
+   this file is the single source of truth for how those pages adapt to
+   tablets and phones.
+
+   Breakpoints:
+     • <= 1024px  tablet landscape
+     • <=  760px  tablet portrait / large phone
+     • <=  520px  phone
+   ===================================================================== */
+
+/* --------------------------------------------------------------------
+   Tablet landscape — tighten the outer gutters
+   -------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .band-inner,
+    .content { padding-left: 24px; padding-right: 24px; }
+
+    /* project detail: on desktop the edit/delete buttons float in the
+       side gutter (left: calc(100% + 8px)). Once the gutter disappears
+       they would overflow the viewport, so drop them into normal flow. */
+    .target-outer-actions {
+        position: static;
+        flex-direction: row;
+        justify-content: flex-end;
+        margin: 0 16px 12px;
+    }
+}
+
+/* --------------------------------------------------------------------
+   Tablet portrait / large phone
+   -------------------------------------------------------------------- */
+@media (max-width: 760px) {
+    .topnav { padding-left: 16px; padding-right: 16px; }
+    .topnav-left { gap: 18px; }
+
+    /* free up nav room: drop the "coming soon" placeholders + status pill */
+    .navlinks span { display: none; }
+    .selfhosted { display: none; }
+
+    .band-inner,
+    .content { padding-left: 16px; padding-right: 16px; }
+    .content { padding-bottom: 44px; }
+
+    .band-head h1,
+    .headline h1 { font-size: 22px; }
+
+    /* overview "Latest test": stack the title above its metric chips so the
+       chips stop squeezing the endpoint/meta text into a one-word column */
+    .latest .panel-head { flex-direction: column; align-items: stretch; gap: 12px; }
+    .latest-badges { justify-content: flex-start; }
+}
+
+/* --------------------------------------------------------------------
+   Phone
+   -------------------------------------------------------------------- */
+@media (max-width: 520px) {
+    .topnav { padding-left: 12px; padding-right: 12px; }
+    .topnav-left { gap: 12px; }
+    .navlinks a { padding: 8px 10px; }
+
+    /* drop the "Load Testing" subtitle so the brand stays compact */
+    .brand-text small { display: none; }
+
+    /* stack the band header and let its primary button span the row */
+    .band-head { gap: 12px; }
+    .band-head .btn-dark { width: 100%; justify-content: center; }
+
+    /* single-column project grid — avoids the 320px min-track overflow
+       on phones narrower than the card's minimum width */
+    .grid { grid-template-columns: 1fr; }
+
+    /* project detail: let the section actions (New target / Import) stack */
+    .section-head { align-items: flex-start; }
+}

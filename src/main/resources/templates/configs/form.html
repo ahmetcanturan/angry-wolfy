@@ -2,6 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${configId} != null ? 'Edit environment' : 'New environment'">Config form</title>
     <style>
         * { box-sizing: border-box; }
@@ -170,6 +171,15 @@
             padding: 11px 22px;
             border-radius: 11px;
             cursor: pointer;
+        }
+
+        /* --- responsive: phone --- */
+        @media (max-width: 620px) {
+            body { padding: 20px 16px; }
+            .row { grid-template-columns: 1fr; }
+            .actions { flex-direction: column-reverse; align-items: stretch; }
+            .actions .btn-cancel,
+            .actions .btn-save { width: 100%; text-align: center; }
         }
     </style>
 </head>

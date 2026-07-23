@@ -186,6 +186,8 @@
         }
         .chart-box, .donut-box { position: relative; width: 100%; height: 210px; }
     </style>
+    <!-- shared responsive layer (loaded last so its @media rules win) -->
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div class="page">

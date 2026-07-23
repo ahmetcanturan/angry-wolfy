@@ -259,6 +259,17 @@
             display: inline-flex;
             align-items: center;
         }
+
+        /* --- responsive: tablet portrait / phone --- */
+        @media (max-width: 720px) {
+            .wf-header { padding: 0 16px; }
+            .wf-main { padding: 22px 16px 48px; }
+            .wf-card { padding: 18px; }
+            .wf-row { grid-template-columns: 1fr; }
+            .wf-actions { flex-direction: column-reverse; align-items: stretch; }
+            .wf-actions .wf-btn-primary,
+            .wf-actions .wf-btn-secondary { width: 100%; justify-content: center; text-align: center; }
+        }
     </style>
 </head>
 <body>

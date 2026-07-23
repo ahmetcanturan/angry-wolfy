@@ -692,6 +692,8 @@
         .import-result .warn { color: #a6710a; font-size: 12px; margin-top: 6px; }
         .btn-dark:disabled { opacity: .5; cursor: not-allowed; }
     </style>
+    <!-- shared responsive layer (loaded last so its @media rules win) -->
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div class="page">
