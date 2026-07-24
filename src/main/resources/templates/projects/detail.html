@@ -145,6 +145,16 @@
             font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #3d5580; font-weight: 500;
         }
         .active-baseurl-row .hdr { font-size: 12px; color: #93a1b5; }
+        .active-baseurl-row .env-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .env-del-form { margin: 0; display: inline-flex; }
+        .env-edit, .env-delete {
+            font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; line-height: 1;
+            padding: 7px 12px; border-radius: 9px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .env-edit { color: #3d5580; background: #eef2f8; border: 1px solid #dbe3ee; }
+        .env-edit:hover { background: #e2e9f4; }
+        .env-delete { color: #c0392b; background: #fdecea; border: 1px solid #f4cfcb; }
+        .env-delete:hover { background: #fadbd8; }
 
         .empty-state {
             padding: 24px; border: 1.5px dashed #cdd8e6; border-radius: 14px; background: #fbfcfe;
@@ -195,11 +205,6 @@
         }
         .target-row:hover { background: #fafbfd; }
         .target-row-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-        .row-chevron {
-            font-size: 20px; line-height: 1; color: #b8c4d6; font-weight: 700;
-            transition: transform .18s ease; flex-shrink: 0; margin-left: -6px;
-        }
-        .target-card.open .row-chevron { transform: rotate(180deg); color: #7c8aa0; }
         .target-icon-btn {
             width: 24px; height: 24px; border-radius: 7px; border: none;
             font-size: 11px; font-weight: 700; line-height: 1;
@@ -773,7 +778,8 @@
                             <span th:text="${c.name}">Env name</span>
                         </a>
                     </div>
-                    <a th:href="@{/projects/{projectId}/configs/new(projectId=${project.id})}" class="btn-manage">＋ Manage</a>
+                    <a th:href="@{/projects/{projectId}/configs/new(projectId=${project.id})}" class="btn-manage"
+                       title="Add a new environment">＋ New env</a>
                 </div>
             </div>
 
@@ -791,6 +797,16 @@
                       th:text="${activeConfig.type}">LOCAL</span>
                 <span class="url" th:text="${activeConfig.baseUrl}">http://localhost:8080</span>
                 <span class="hdr" th:text="'· ' + ${#maps.size(activeConfig.headers)} + ' headers merged into every request'">· 0 headers merged into every request</span>
+                <div class="env-actions">
+                    <a class="env-edit" th:href="@{/configs/{id}/edit(id=${activeConfig.id})}"
+                       th:title="'Edit ' + ${activeConfig.name}">✎ Edit</a>
+                    <form class="env-del-form" method="post"
+                          th:action="@{/configs/{id}/delete(id=${activeConfig.id})}"
+                          onsubmit="return confirm('Delete this environment? Targets that rely on it will have no base URL until you pick another.');">
+                        <button type="submit" class="env-delete"
+                                th:title="'Delete ' + ${activeConfig.name}">✕ Delete</button>
+                    </form>
+                </div>
             </div>
 
             <!-- no configs empty state -->
@@ -865,7 +881,6 @@
                                 <span class="play"></span>Run
                             </button>
                         </div>
-                        <span class="row-chevron js-row-chevron" aria-hidden="true">⌄</span>
                     </div>
                 </div>
 

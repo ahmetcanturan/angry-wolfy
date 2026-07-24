@@ -1,24 +1,26 @@
 package com.buddywolfy.angrywolfy.repository;
 
-import com.buddywolfy.angrywolfy.entity.Chart;
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
+import com.buddywolfy.angrywolfy.entity.Chart;
 
 public interface ChartRepository extends JpaRepository<Chart, Long> {
 
     /** The stored runs for a target, newest first (at most 50 are ever retained). */
     List<Chart> findByTargetIdOrderByCreatedAtDesc(Long targetId);
 
-    /**
-     * Newest runs across every target, with target/project/config eagerly fetched
-     * so the dashboard feed can render each row without a lazy-load per run. Pass a
-     * {@code PageRequest.of(0, n)} to cap the count.
-     */
+
+    @Modifying
+    @Query("update Chart c set c.config = null where c.config.id = :configId")
+    int detachFromConfig(@Param("configId") Long configId);
+
+
     @Query("""
             select c from Chart c
               join fetch c.target t

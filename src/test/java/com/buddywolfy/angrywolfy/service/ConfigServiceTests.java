@@ -3,6 +3,7 @@ package com.buddywolfy.angrywolfy.service;
 import com.buddywolfy.angrywolfy.entity.Config;
 import com.buddywolfy.angrywolfy.enums.ConfigType;
 import com.buddywolfy.angrywolfy.entity.Project;
+import com.buddywolfy.angrywolfy.repository.ChartRepository;
 import com.buddywolfy.angrywolfy.repository.ConfigRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class ConfigServiceTests {
 
     @Mock
     private ProjectService projectService;
+
+    @Mock
+    private ChartRepository chartRepository;
 
     @InjectMocks
     private ConfigService configService;
@@ -105,9 +109,10 @@ class ConfigServiceTests {
     }
 
     @Test
-    void deleteDelegatesToRepository() {
+    void deleteDetachesStoredRunsThenDeletesConfig() {
         configService.delete(1L);
 
+        verify(chartRepository).detachFromConfig(1L);
         verify(configRepository).deleteById(1L);
     }
 }
