@@ -21,11 +21,13 @@ public record ChartSummary(
         Instant createdAt
 ) {
     public static ChartSummary from(Chart chart) {
+        // config is null for runs made with no environment.
+        var config = chart.getConfig();
         return new ChartSummary(
                 chart.getId(),
                 chart.getTarget().getId(),
-                chart.getConfig().getId(),
-                chart.getConfig().getName(),
+                config != null ? config.getId() : null,
+                config != null ? config.getName() : "No environment",
                 chart.getTotalRequests(),
                 chart.getRequestsPerSec(),
                 chart.getSuccessRate(),

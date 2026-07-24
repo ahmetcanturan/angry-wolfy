@@ -90,10 +90,21 @@ public class OhaCommandBuilder {
      * target's own {@code baseUrlOverride} wins when set, letting one target
      * point at a different domain than the environment; otherwise the config's
      * base URL is used. Both are already trailing-slash-normalized.
+     *
+     * <p>{@code config} may be null — a target that carries its own absolute URL
+     * (an override, e.g. an imported WebSocket target) can run with no
+     * environment at all. A target that has neither an override nor a config to
+     * borrow a base URL from can't be resolved and is rejected with a clear message.
      */
     String resolveUrl(Config config, Target target) {
         String override = target.getBaseUrlOverride();
-        String base = (override != null && !override.isBlank()) ? override : config.getBaseUrl();
+        String base = (override != null && !override.isBlank()) ? override
+                : (config != null ? config.getBaseUrl() : null);
+        if (base == null || base.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Target \"" + target.getName() + "\" has no base URL — pick an environment "
+                            + "or set a base URL on the target.");
+        }
         String path = target.getPath();
         if (path == null || path.isBlank()) {
             return base;
@@ -103,7 +114,10 @@ public class OhaCommandBuilder {
 
     /** Config headers as the baseline, overridden by any same-named target headers. */
     Map<String, String> mergedHeaders(Config config, Target target) {
-        Map<String, String> merged = new LinkedHashMap<>(config.getHeaders());
+        Map<String, String> merged = new LinkedHashMap<>();
+        if (config != null) {
+            merged.putAll(config.getHeaders());
+        }
         merged.putAll(target.getCustomHeaders());
         return merged;
     }

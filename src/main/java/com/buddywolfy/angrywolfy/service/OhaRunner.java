@@ -147,10 +147,10 @@ public class OhaRunner {
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("connection error");
-        String url = config.getBaseUrl() + target.getPath();
+        String url = commandBuilder.resolveUrl(config, target);
         throw new OhaExecutionException(
                 "Could not reach " + target.getMethod() + " " + url + " — all " + failed
-                        + " request(s) failed (" + topError + "). Check the environment's base URL "
+                        + " request(s) failed (" + topError + "). Check the base URL "
                         + "and that the target service is running.");
     }
 }

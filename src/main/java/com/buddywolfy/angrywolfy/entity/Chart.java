@@ -43,9 +43,10 @@ public class Chart {
     @JoinColumn(name = "target_id", nullable = false)
     private Target target;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "config_id", nullable = false)
+    // Nullable: a target carrying its own absolute URL can be run with no
+    // environment, so a stored run may have no config.
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "config_id", nullable = true)
     private Config config;
 
     // Flat headline metrics — queryable/sortable without touching the JSON.

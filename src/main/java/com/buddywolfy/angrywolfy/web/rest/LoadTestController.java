@@ -70,7 +70,9 @@ public class LoadTestController {
      * {@code POST /api/targets/{targetId}/run?configId={id}[&runId={uuid}]}
      *
      * @param targetId the endpoint to load test
-     * @param configId the environment (base URL + shared headers) to run against
+     * @param configId the environment (base URL + shared headers) to run against;
+     *                 optional — a target carrying its own absolute URL can run
+     *                 with no environment
      * @param runId    optional client-supplied run id so it can cancel before the
      *                 response arrives; a random one is generated if omitted
      * @param options  optional oha knobs; an empty/absent body uses defaults
@@ -78,12 +80,14 @@ public class LoadTestController {
      */
     @PostMapping("/api/targets/{targetId}/run")
     public ResponseEntity<OhaResult> run(@PathVariable Long targetId,
-                                         @RequestParam Long configId,
+                                         @RequestParam(required = false) Long configId,
                                          @RequestParam(required = false) String runId,
                                          @Valid @RequestBody(required = false) OhaOptions options) {
         Target target = targetService.getById(targetId);
-        Config config = configService.getById(configId);
-        requireSameProject(target, config);
+        Config config = configId != null ? configService.getById(configId) : null;
+        if (config != null) {
+            requireSameProject(target, config);
+        }
 
         String id = (runId != null && !runId.isBlank()) ? runId : UUID.randomUUID().toString();
         OhaOptions effective = options != null ? options : new OhaOptions(null, null, null, null, null, null);
@@ -103,14 +107,19 @@ public class LoadTestController {
      * response (status, timing, and body) for display. No load test, no history.
      *
      * @param targetId the endpoint to hit once
-     * @param configId the environment supplying the base URL and shared headers
+     * @param configId the environment supplying the base URL and shared headers;
+     *                 optional — a target carrying its own absolute URL can be
+     *                 checked with no environment
      * @return the response summary and body
      */
     @PostMapping("/api/targets/{targetId}/check")
-    public CheckResult check(@PathVariable Long targetId, @RequestParam Long configId) {
+    public CheckResult check(@PathVariable Long targetId,
+                             @RequestParam(required = false) Long configId) {
         Target target = targetService.getById(targetId);
-        Config config = configService.getById(configId);
-        requireSameProject(target, config);
+        Config config = configId != null ? configService.getById(configId) : null;
+        if (config != null) {
+            requireSameProject(target, config);
+        }
         return checkService.check(target, config);
     }
 

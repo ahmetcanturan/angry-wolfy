@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -708,8 +709,6 @@
             <nav class="navlinks">
                 <a th:href="@{/overview}">Overview</a>
                 <a th:href="@{/projects}" class="active">Projects</a>
-                <span title="Coming soon">Test Runs</span>
-                <span title="Coming soon">Reports</span>
             </nav>
         </div>
         <div class="topnav-right">
@@ -857,8 +856,8 @@
                                     title="Configure run" aria-label="Configure run">⚙</button>
                             <button type="button" class="btn-check js-check-target"
                                     th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}"
-                                    th:disabled="${activeConfig == null}"
-                                    title="Send one request and show the response">✓ Check</button>
+                                    th:disabled="${activeConfig == null and t.baseUrlOverride == null}"
+                                    title="Send one request and show the response">Check</button>
                             <button type="button" class="btn-run js-run-target"
                                     th:attr="data-target-id=${t.id}, data-config-id=${activeConfigId}, data-target-name=${t.name},
                                              data-target-method=${t.type != null and t.type.name() == 'WEBSOCKET' ? 'WS' : t.method}, data-target-path=${t.path},
@@ -974,6 +973,7 @@
                                         <span>⤓ Export</span><span class="caret">▾</span>
                                     </button>
                                     <div class="export-dropdown js-export-dropdown" hidden>
+                                        <button type="button" class="export-option js-export" data-fmt="pdf">PDF report (charts)</button>
                                         <button type="button" class="export-option js-export" data-fmt="json">JSON</button>
                                         <button type="button" class="export-option js-export" data-fmt="csv">CSV</button>
                                         <button type="button" class="export-option js-export" data-fmt="md">Markdown</button>
@@ -1192,11 +1192,11 @@
     // wires an AbortController so Cancel also stops the browser waiting.
     // configId is the environment picked in the target card's panel selector.
     async function runLoadTest(targetId, options, runId, signal, configId) {
-        const cfg = configId;
-        if (!cfg) {
-            throw new Error('Pick an environment first.');
-        }
-        const url = `/api/targets/${targetId}/run?configId=${cfg}&runId=${encodeURIComponent(runId)}`;
+        // configId is optional: a target carrying its own absolute URL (an
+        // override, e.g. a WebSocket target) runs with no environment picked.
+        const params = new URLSearchParams({ runId });
+        if (configId) { params.set('configId', configId); }
+        const url = `/api/targets/${targetId}/run?${params.toString()}`;
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1350,19 +1350,23 @@
         el.innerHTML = rows.length ? rows.join('') : '<div class="bd-empty">No responses recorded.</div>';
     }
 
-    // Fill a target card's dashboard from an OhaResult ------------------
-    function fillPanel(card, result, openPanel = true) {
-        const s = result.summary;
-        const p = result.latencyPercentiles;
+    // Success/failure split, computed the way the dashboard shows it: only 2xx
+    // (and WS 'ok') count as success, so it agrees with the donut. oha's own
+    // successRate counts any HTTP response — incl. 4xx/5xx — as success.
+    function outcomeOf(result) {
         const total = Object.values(result.statusCodeDistribution || {}).reduce((a, b) => a + b, 0);
         const failed = Object.values(result.errorDistribution || {}).reduce((a, b) => a + b, 0)
             + Object.entries(result.statusCodeDistribution || {})
                 .filter(([code]) => !/^2/.test(code) && code !== 'ok').reduce((a, [, c]) => a + c, 0);
         const success = Math.max(0, total - failed);
+        return { total, failed, success, okRate: total > 0 ? success / total : 0 };
+    }
 
-        // hero + tiles. Success rate is 2xx / total so it agrees with the donut
-        // (oha's own successRate counts any HTTP response, incl. 4xx/5xx, as success).
-        const okRate = total > 0 ? success / total : 0;
+    // Fill a target card's dashboard from an OhaResult ------------------
+    function fillPanel(card, result, openPanel = true) {
+        const s = result.summary;
+        const p = result.latencyPercentiles;
+        const { total, failed, success, okRate } = outcomeOf(result);
         card.querySelector('.js-stat-rps').textContent = s.requestsPerSec.toFixed(1);
         card.querySelector('.js-stat-total').textContent = num(total);
         card.querySelector('.js-stat-success').textContent = pct(okRate);
@@ -1475,18 +1479,163 @@
         download(exportName(card) + '-result.md', md, 'text/markdown');
     }
 
-    // PNG — one chart's canvas, flattened onto a white background.
-    function exportChartPng(card, canvasClass, chartName) {
+    // A chart canvas flattened onto a white background. Chart.js canvases are
+    // transparent, so an unflattened capture would be see-through in a PNG/PDF.
+    // Returns the PNG data URL plus pixel dimensions, or null when absent/empty.
+    function chartImage(card, canvasClass) {
         const canvas = card.querySelector('.' + canvasClass);
-        if (!canvas) { return; }
-        // Chart.js canvases are transparent; composite onto white so the PNG isn't see-through.
+        if (!canvas || !canvas.width || !canvas.height) { return null; }
         const out = document.createElement('canvas');
         out.width = canvas.width; out.height = canvas.height;
         const ctx = out.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, out.width, out.height);
         ctx.drawImage(canvas, 0, 0);
-        download(`${exportName(card)}-${chartName}.png`, out.toDataURL('image/png'));
+        return { dataUrl: out.toDataURL('image/png'), w: canvas.width, h: canvas.height };
+    }
+
+    // PNG — one chart's canvas, flattened onto a white background.
+    function exportChartPng(card, canvasClass, chartName) {
+        const img = chartImage(card, canvasClass);
+        if (!img) { return; }
+        download(`${exportName(card)}-${chartName}.png`, img.dataUrl);
+    }
+
+    // The environment name shown in the panel selector, e.g. "Staging" (the
+    // option text is "name — baseUrl"; we keep just the name). Empty when the
+    // target runs with no environment.
+    function envName(card) {
+        const sel = card.querySelector('.js-panel-env');
+        if (!sel || !sel.selectedOptions.length) { return ''; }
+        return sel.selectedOptions[0].textContent.split(' — ')[0].trim();
+    }
+
+    // PDF — a single-file report keeping all three charts as images, plus the
+    // headline metrics and the status/error breakdown. Built client-side with
+    // jsPDF (A4 portrait) so nothing has to be rendered on the server.
+    function exportPdf(card) {
+        const jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+        if (!jsPDFCtor) { alert('PDF export is unavailable — the PDF library failed to load.'); return; }
+        const r = card._result, s = r.summary, p = r.latencyPercentiles || {}, m = targetMeta(card);
+        const o = outcomeOf(r);
+
+        const doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 44;
+        const contentW = pageW - margin * 2;
+        let y = margin;
+
+        // Brand palette (RGB).
+        const NAVY = [14, 35, 64], SLATE = [147, 161, 181], INK = [37, 51, 74],
+              LINE = [230, 235, 242], ROW = [246, 249, 252];
+
+        // Break to a new page when `need` points won't fit below the cursor.
+        const ensure = (need) => { if (y + need > pageH - margin) { doc.addPage(); y = margin; } };
+
+        // A section heading with an underline rule.
+        function heading(text) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor.apply(doc, NAVY);
+            doc.text(text, margin, y + 4); y += 12;
+            doc.setDrawColor.apply(doc, LINE); doc.setLineWidth(1);
+            doc.line(margin, y, pageW - margin, y); y += 16;
+        }
+
+        // Zebra-striped key/value rows.
+        function rows(pairs, rowH) {
+            pairs.forEach((row, i) => {
+                ensure(rowH);
+                const top = y;
+                if (i % 2 === 0) { doc.setFillColor.apply(doc, ROW); doc.rect(margin, top, contentW, rowH, 'F'); }
+                const baseline = top + rowH / 2 + 3.5;
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor.apply(doc, SLATE);
+                doc.text(doc.splitTextToSize(String(row[0]), contentW - 130)[0], margin + 10, baseline);
+                doc.setFont('helvetica', 'bold'); doc.setTextColor.apply(doc, INK);
+                doc.text(String(row[1]), pageW - margin - 10, baseline, { align: 'right' });
+                y = top + rowH;
+            });
+        }
+
+        // A chart image scaled to `widthFrac` of the content width, centered.
+        function chart(canvasClass, title, sub, widthFrac) {
+            const img = chartImage(card, canvasClass);
+            const w = img ? contentW * (widthFrac || 1) : 0;
+            const h = img ? w * (img.h / img.w) : 22;
+            const subLines = sub ? doc.splitTextToSize(sub, contentW) : [];
+            ensure(30 + h + subLines.length * 11 + 12);
+            heading(title);
+            if (img) {
+                doc.addImage(img.dataUrl, 'PNG', margin + (contentW - w) / 2, y, w, h); y += h + 8;
+            } else {
+                doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor.apply(doc, SLATE);
+                doc.text('Chart unavailable — open the Charts tab, then export.', margin, y + 4); y += 18;
+            }
+            if (subLines.length) {
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, SLATE);
+                doc.text(subLines, margin, y); y += subLines.length * 11;
+            }
+            y += 16;
+        }
+
+        // --- header ---
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, SLATE);
+        doc.text('ANGRYWOLFY · LOAD TEST REPORT', margin, y); y += 20;
+        doc.setFontSize(20); doc.setTextColor.apply(doc, NAVY);
+        doc.text(doc.splitTextToSize(m.name || 'Target', contentW), margin, y); y += 22;
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor.apply(doc, INK);
+        const endpoint = [m.method, m.url || m.path].filter(Boolean).join('   ') || '—';
+        doc.text(doc.splitTextToSize(endpoint, contentW), margin, y); y += 14;
+        const env = envName(card);
+        if (env) {
+            doc.setFontSize(9.5); doc.setTextColor.apply(doc, SLATE);
+            doc.text('Environment: ' + env, margin, y); y += 12;
+        }
+        y += 12;
+
+        // --- headline metrics ---
+        heading('Summary');
+        rows([
+            ['Throughput', s.requestsPerSec.toFixed(1) + ' req/s'],
+            ['Total requests', num(o.total)],
+            ['Success rate', pct(o.okRate) + '   (' + num(o.success) + ' ok / ' + num(o.failed) + ' failed)'],
+            ['Average latency', ms(s.average)],
+            ['Fastest / Slowest', ms(s.fastest) + '   /   ' + ms(s.slowest)],
+            ['p50 / p95 / p99', ['p50', 'p95', 'p99'].map((k) => p[k] != null ? ms(p[k]) : '—').join('   /   ')],
+            ['Data transferred', bytes(s.totalData)]
+        ], 22);
+        y += 14;
+
+        // --- charts (all three) ---
+        chart('js-histogram', 'Response-time distribution',
+            'How many requests fell in each latency bucket — a long right tail means slow outliers.', 1);
+        chart('js-percentiles', 'Latency percentiles',
+            'A sharp climb after p95 means your tail latency is the risk.', 1);
+        chart('js-donut', 'Outcome', null, 0.5);
+
+        // --- status codes & errors ---
+        const bd = [];
+        Object.entries(r.statusCodeDistribution || {}).forEach(([code, n]) =>
+            bd.push([/^\d/.test(code) ? 'HTTP ' + code : code, num(n)]));
+        Object.entries(r.errorDistribution || {}).forEach(([msg, n]) => bd.push([msg, num(n)]));
+        ensure(40);
+        heading('Status codes & errors');
+        if (bd.length) {
+            rows(bd, 20);
+        } else {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor.apply(doc, SLATE);
+            doc.text('No responses recorded.', margin, y + 4); y += 18;
+        }
+
+        // --- footer on every page ---
+        const gen = new Date().toLocaleString();
+        const pages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pages; i++) {
+            doc.setPage(i);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, SLATE);
+            doc.text('Generated ' + gen, margin, pageH - 20);
+            doc.text(i + ' / ' + pages, pageW - margin, pageH - 20, { align: 'right' });
+        }
+        doc.save(exportName(card) + '-report.pdf');
     }
 
     // Close any open export dropdown (optionally all but one).
@@ -1522,7 +1671,8 @@
                 closeExportMenus();
                 if (!card._result) { return; }
                 const fmt = btn.getAttribute('data-fmt');
-                if (fmt === 'json') { exportJson(card); }
+                if (fmt === 'pdf') { exportPdf(card); }
+                else if (fmt === 'json') { exportJson(card); }
                 else if (fmt === 'csv') { exportCsv(card); }
                 else if (fmt === 'md') { exportMarkdown(card); }
             });
@@ -2115,8 +2265,10 @@
         btn.addEventListener('click', async () => {
             const card = btn.closest('.target-card');
             const targetId = btn.getAttribute('data-target-id');
+            // configId is optional: a target with its own absolute URL can be
+            // checked with no environment. The server resolves the base URL and
+            // returns a clear error if the target has none.
             const configId = btn.getAttribute('data-config-id');
-            if (!configId) { showCheckError(card, 'Pick an environment first.'); return; }
 
             const original = btn.innerHTML;
             btn.disabled = true;
@@ -2133,7 +2285,10 @@
             card.querySelector('.js-check-panel').hidden = false;
 
             try {
-                const res = await fetch(`/api/targets/${targetId}/check?configId=${configId}`, { method: 'POST' });
+                const checkUrl = configId
+                    ? `/api/targets/${targetId}/check?configId=${configId}`
+                    : `/api/targets/${targetId}/check`;
+                const res = await fetch(checkUrl, { method: 'POST' });
                 const data = await res.json();
                 if (!res.ok) { throw new Error(data.message || `Request failed (${res.status})`); }
                 showCheck(card, data);

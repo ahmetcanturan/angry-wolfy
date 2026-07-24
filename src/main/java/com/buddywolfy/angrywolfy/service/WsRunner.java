@@ -331,7 +331,7 @@ public class WsRunner {
             throw new OhaExecutionException(
                     "Could not complete any WebSocket operations against " + uri + " — all "
                             + Math.max(failed, 1) + " attempt(s) failed (" + topError
-                            + "). Check the environment's base URL and that the server speaks WebSocket.");
+                            + "). Check the base URL and that the server speaks WebSocket.");
         }
 
         List<Double> lat = new ArrayList<>(state.latencies);
